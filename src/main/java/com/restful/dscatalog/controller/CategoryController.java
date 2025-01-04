@@ -5,6 +5,9 @@ import com.restful.dscatalog.dto.DadosCadastroCategoria;
 import com.restful.dscatalog.dto.DadosDetalhamentoCategoria;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,7 @@ import static org.springframework.http.ResponseEntity.ok;
 @RestController
 @RequestMapping("/api/v1/categories")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
+@Tag(name = "Consulta Controller", description = "Controller para gerenciamento de consultas")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -29,6 +33,14 @@ public class CategoryController {
 
     @PostMapping
     @Transactional
+    @Operation(
+            summary = "Cria uma categoria",
+            description = "Cria uma categoria a partir de um DTO",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Categoria criada"),
+                    @ApiResponse(responseCode = "400", description = "Erro de validação")
+            }
+    )
     public ResponseEntity<DadosDetalhamentoCategoria> createCategory(
             @RequestBody @Valid DadosCadastroCategoria dto,
             UriComponentsBuilder uriComponentsBuilder
