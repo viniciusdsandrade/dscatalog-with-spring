@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -54,5 +57,13 @@ public class CategoryController {
     public ResponseEntity<DadosDetalhamentoCategoria> getCategoria(@PathVariable Long id) {
         Category category = categoryService.buscarPorId(id);
         return ok(new DadosDetalhamentoCategoria(category));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<DadosDetalhamentoCategoria>> getAllCategories(
+            @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao
+    ) {
+        Page<DadosDetalhamentoCategoria> categories = categoryService.listar(paginacao);
+        return ok(categories);
     }
 }

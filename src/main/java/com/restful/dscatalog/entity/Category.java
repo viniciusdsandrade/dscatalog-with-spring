@@ -1,5 +1,6 @@
 package com.restful.dscatalog.entity;
 
+import com.restful.dscatalog.dto.DadosCadastroCategoria;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,8 +28,8 @@ public class Category implements Cloneable {
     private Long id;
     private String name;
 
-    public Category(String name) {
-        this.name = name;
+    public Category(DadosCadastroCategoria name) {
+        this.name = name.name();
     }
 
     // Copy constructor
