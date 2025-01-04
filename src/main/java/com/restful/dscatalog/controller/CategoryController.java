@@ -13,6 +13,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 
+import static org.springframework.http.ResponseEntity.created;
+import static org.springframework.http.ResponseEntity.ok;
+
 @RestController
 @RequestMapping("/api/v1/categories")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -32,12 +35,12 @@ public class CategoryController {
     ) {
         Category category = categoryService.create(dto);
         URI uri = uriComponentsBuilder.path("/api/v1/categories/{id}").buildAndExpand(category.getId()).toUri();
-        return ResponseEntity.created(uri).body(new DadosDetalhamentoCategoria(category));
+        return created(uri).body(new DadosDetalhamentoCategoria(category));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DadosDetalhamentoCategoria> getCategoria(@PathVariable Long id) {
         Category category = categoryService.buscarPorId(id);
-        return ResponseEntity.ok(new DadosDetalhamentoCategoria(category));
+        return ok(new DadosDetalhamentoCategoria(category));
     }
 }
