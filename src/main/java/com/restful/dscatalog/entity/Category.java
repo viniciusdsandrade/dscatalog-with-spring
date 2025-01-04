@@ -15,7 +15,6 @@ import static lombok.AccessLevel.NONE;
 @Entity(name = "Category")
 @Table(
         name = "tb_category",
-        schema = "db_ds_catalog",
         uniqueConstraints = {
                 @UniqueConstraint(name = "category_name_unique", columnNames = "name")
         }
