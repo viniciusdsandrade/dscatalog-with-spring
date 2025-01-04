@@ -1,13 +1,12 @@
 package com.restful.dscatalog;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import static org.springframework.boot.SpringApplication.run;
 
 @SpringBootApplication
 public class DscatalogApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(DscatalogApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        run(DscatalogApplication.class, args);
+    }
 }

@@ -1,12 +1,15 @@
 package com.restful.dscatalog.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Objects;
 
+import static jakarta.persistence.GenerationType.IDENTITY;
+import static lombok.AccessLevel.NONE;
+
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 @Entity(name = "Category")
@@ -20,18 +23,10 @@ import java.util.Objects;
 public class Category implements Cloneable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
-    private long id;
+    @GeneratedValue(strategy = IDENTITY)
+    @Setter(NONE)
+    private Long id;
     private String name;
-
-    public Category() {
-    }
-
-    public Category(long id, String name) {
-        this.id = id;
-        this.name = name;
-    }
 
     public Category(String name) {
         this.name = name;
@@ -44,14 +39,13 @@ public class Category implements Cloneable {
     }
 
     @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Category clone() {
         Category clone = null;
-
         try {
             clone = new Category(this);
         } catch (Exception ignored) {
         }
-
         return clone;
     }
 
@@ -63,7 +57,7 @@ public class Category implements Cloneable {
         hash *= prime + (id == 0 ? 0 : Long.hashCode(id));
         hash *= prime + ((name == null) ? 0 : name.hashCode());
 
-        if (hash < 0) hash = hash * -1;
+        if (hash < 0) hash = -hash;
 
         return hash;
     }
@@ -77,16 +71,14 @@ public class Category implements Cloneable {
         Category other = (Category) obj;
 
         return Objects.equals(this.id, other.id) &&
-                Objects.equals(this.name, other.name);
+               Objects.equals(this.name, other.name);
     }
 
     @Override
     public String toString() {
         return "{\"Category\":{" +
-                "\"id\":" + id +
-                ", \"name\":\"" + name + '\"' +
-                "}}";
+               "\"id\":" + id +
+               ", \"name\":\"" + name + '\"' +
+               "}}";
     }
-
-
 }
