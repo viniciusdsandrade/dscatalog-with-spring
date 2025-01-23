@@ -7,6 +7,7 @@ import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.CategoryService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

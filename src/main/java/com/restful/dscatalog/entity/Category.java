@@ -9,8 +9,8 @@ import java.util.Objects;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 @Entity(name = "Category")
