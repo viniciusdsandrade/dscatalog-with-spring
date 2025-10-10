@@ -3,10 +3,13 @@ package com.restful.dscatalog.service.impl;
 import com.restful.dscatalog.dto.DadosCadastroCategoria;
 import com.restful.dscatalog.dto.DadosDetalhamentoCategoria;
 import com.restful.dscatalog.entity.Category;
+import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.CategoryService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,8 +30,8 @@ public class CategoryServiceImpl implements CategoryService {
             Category newCategory = new Category(category);
             categoryRepository.saveAndFlush(newCategory);
             return newCategory;
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new com.restful.dscatalog.exception.DuplicateEntryException("Entrada duplicada para Categoria.");
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateEntryException("Entrada duplicada para Categoria.");
         }
     }
 
@@ -55,7 +58,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public DadosDetalhamentoCategoria delete(Long id) {
         var entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Category not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
         categoryRepository.delete(entity);
         return new DadosDetalhamentoCategoria(entity);
     }
