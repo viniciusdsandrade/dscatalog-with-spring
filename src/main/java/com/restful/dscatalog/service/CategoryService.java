@@ -17,5 +17,9 @@ public interface CategoryService {
 
     Page<DadosDetalhamentoCategoria> listar(Pageable paginacao);
 
+    @Transactional
     @Valid DadosDetalhamentoCategoria update(Long id, @Valid DadosCadastroCategoria dto);
+
+    @Transactional
+    DadosDetalhamentoCategoria delete(Long id);
 }

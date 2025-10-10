@@ -75,4 +75,10 @@ public class CategoryController {
         DadosDetalhamentoCategoria updatedCategory = categoryService.update(id, dto);
         return ok(updatedCategory);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<DadosDetalhamentoCategoria> delete(@PathVariable Long id) {
+        var dto = categoryService.delete(id);
+        return ok(dto);
+    }
 }

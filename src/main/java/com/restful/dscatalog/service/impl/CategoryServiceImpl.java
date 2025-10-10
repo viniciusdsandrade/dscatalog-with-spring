@@ -39,6 +39,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public @Valid DadosDetalhamentoCategoria update(Long id, DadosCadastroCategoria dto) {
         Category category = categoryRepository.getReferenceById(id);
         category.setName(dto.name());
@@ -46,4 +47,12 @@ public class CategoryServiceImpl implements CategoryService {
         return new DadosDetalhamentoCategoria(category);
     }
 
+    @Override
+    @Transactional
+    public DadosDetalhamentoCategoria delete(Long id) {
+        var entity = categoryRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Category not found: " + id));
+        categoryRepository.delete(entity);
+        return new DadosDetalhamentoCategoria(entity);
+    }
 }
