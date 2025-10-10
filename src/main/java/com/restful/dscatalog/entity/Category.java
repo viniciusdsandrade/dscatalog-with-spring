@@ -3,7 +3,9 @@ package com.restful.dscatalog.entity;
 import com.restful.dscatalog.dto.DadosCadastroCategoria;
 import jakarta.persistence.*;
 import lombok.*;
-
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -28,14 +30,23 @@ public class Category implements Cloneable {
     private Long id;
     private String name;
 
+    @CreationTimestamp
+    @Column(name = "created_at", columnDefinition = "DATETIME(6)")
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", columnDefinition = "DATETIME(6)")
+    private LocalDateTime updatedAt;
+
     public Category(DadosCadastroCategoria name) {
         this.name = name.name();
     }
 
-    // Copy constructor
     public Category(Category category) {
         this.id = category.id;
         this.name = category.name;
+        this.createdAt = category.createdAt;
+        this.updatedAt = category.updatedAt;
     }
 
     @Override
