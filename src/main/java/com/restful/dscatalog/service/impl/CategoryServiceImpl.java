@@ -7,7 +7,6 @@ import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.CategoryService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,7 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Category buscarPorId(Long id) {
+    public Category findById(Long id) {
         return categoryRepository.getReferenceById(id);
     }
 
@@ -38,4 +37,13 @@ public class CategoryServiceImpl implements CategoryService {
     public Page<DadosDetalhamentoCategoria> listar(Pageable paginacao) {
         return categoryRepository.findAll(paginacao).map(DadosDetalhamentoCategoria::new);
     }
+
+    @Override
+    public @Valid DadosDetalhamentoCategoria update(Long id, DadosCadastroCategoria dto) {
+        Category category = categoryRepository.getReferenceById(id);
+        category.setName(dto.name());
+        categoryRepository.save(category);
+        return new DadosDetalhamentoCategoria(category);
+    }
+
 }

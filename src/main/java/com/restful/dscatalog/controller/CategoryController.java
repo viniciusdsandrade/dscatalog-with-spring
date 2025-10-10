@@ -34,6 +34,20 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<DadosDetalhamentoCategoria> findById(@PathVariable Long id) {
+        Category category = categoryService.findById(id);
+        return ok(new DadosDetalhamentoCategoria(category));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<DadosDetalhamentoCategoria>> findAll(
+            @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao
+    ) {
+        Page<DadosDetalhamentoCategoria> categories = categoryService.listar(paginacao);
+        return ok(categories);
+    }
+
     @PostMapping
     @Transactional
     @Operation(
@@ -44,7 +58,7 @@ public class CategoryController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
-    public ResponseEntity<DadosDetalhamentoCategoria> createCategory(
+    public ResponseEntity<DadosDetalhamentoCategoria> create(
             @RequestBody @Valid DadosCadastroCategoria dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
@@ -53,17 +67,12 @@ public class CategoryController {
         return created(uri).body(new DadosDetalhamentoCategoria(category));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoCategoria> getCategoria(@PathVariable Long id) {
-        Category category = categoryService.buscarPorId(id);
-        return ok(new DadosDetalhamentoCategoria(category));
-    }
-
-    @GetMapping
-    public ResponseEntity<Page<DadosDetalhamentoCategoria>> getAllCategories(
-            @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao
+    @PutMapping(value = "/{id}")
+    public ResponseEntity<DadosDetalhamentoCategoria> update(
+            @PathVariable Long id,
+            @RequestBody @Valid DadosCadastroCategoria dto
     ) {
-        Page<DadosDetalhamentoCategoria> categories = categoryService.listar(paginacao);
-        return ok(categories);
+        DadosDetalhamentoCategoria updatedCategory = categoryService.update(id, dto);
+        return ok(updatedCategory);
     }
 }
