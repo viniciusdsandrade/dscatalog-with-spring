@@ -23,9 +23,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public Category create(@Valid DadosCadastroCategoria category) {
-        Category newCategory = new Category(category);
-        categoryRepository.save(newCategory);
-        return newCategory;
+        try {
+            Category newCategory = new Category(category);
+            categoryRepository.saveAndFlush(newCategory);
+            return newCategory;
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new com.restful.dscatalog.exception.DuplicateEntryException("Entrada duplicada para Categoria.");
+        }
     }
 
     @Override

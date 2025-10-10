@@ -2,6 +2,7 @@ package com.restful.dscatalog.handler;
 
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ValidacaoException;
+import com.restful.dscatalog.exception.ResourceNotFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
@@ -28,15 +29,15 @@ public class GlobalExceptionHandler {
      * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
      * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 404 (Not Found).
      */
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<List<ErrorDetails>> handleResourceNotFoundException(EntityNotFoundException exception,
+    @ExceptionHandler({EntityNotFoundException.class, ResourceNotFoundException.class})
+    public ResponseEntity<List<ErrorDetails>> handleResourceNotFoundException(Exception exception,
                                                                               WebRequest webRequest) {
 
         ErrorDetails errorDetails = new ErrorDetails(
-                now(),                            // Data e hora do erro.
-                exception.getMessage(),                         // Mensagem de erro da exceção.
-                webRequest.getDescription(false),              // Descrição da solicitação.
-                "RESOURCE_NOT_FOUND"                           // Tipo de erro.
+                now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "RESOURCE_NOT_FOUND"
         );
 
         return new ResponseEntity<>(List.of(errorDetails), NOT_FOUND);
@@ -52,15 +53,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception,
                                                                                     WebRequest webRequest) {
-        // Obtém a lista de erros de campo da exceção.
         var errors = exception.getFieldErrors();
 
-        // Mapeia os erros de campo para objetos ErrorDetails e os coleta em uma lista.
         List<ErrorDetails> errorDetailsList = errors.stream()
                 .map(ErrorDetails::new)
                 .collect(toList());
 
-        // Retorna uma ResponseEntity contendo a lista de ErrorDetails e o status HTTP 400 (Bad Request).
         return new ResponseEntity<>(errorDetailsList, BAD_REQUEST);
     }
 
@@ -74,7 +72,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateEntryException.class)
     public ResponseEntity<List<ErrorDetails>> handleDuplicateEntryException(DuplicateEntryException exception,
                                                                             WebRequest webRequest) {
-        // Cria um objeto ErrorDetails para encapsular os detalhes do erro.
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 exception.getMessage(),
@@ -82,7 +79,6 @@ public class GlobalExceptionHandler {
                 "DUPLICATE_ENTRY"
         );
 
-        // Retorna uma ResponseEntity contendo a lista de ErrorDetails e o status HTTP 409 (Conflict).
         return ResponseEntity.status(CONFLICT).body(List.of(errorDetails));
     }
 
