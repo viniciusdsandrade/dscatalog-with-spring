@@ -49,6 +49,10 @@ public class Category implements Cloneable {
         this.updatedAt = category.updatedAt;
     }
 
+    public Category(String capitalize) {
+        this.name = capitalize;
+    }
+
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Category clone() {

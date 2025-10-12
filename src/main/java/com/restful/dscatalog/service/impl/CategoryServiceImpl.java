@@ -49,7 +49,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public @Valid DadosDetalhamentoCategoria update(Long id, DadosCadastroCategoria dto) {
         Category category = categoryRepository.getReferenceById(id);
-        category.setName(dto.name());
+        copyDtoToEntity(dto, category);
         categoryRepository.save(category);
         return new DadosDetalhamentoCategoria(category);
     }
@@ -61,5 +61,11 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
         categoryRepository.delete(entity);
         return new DadosDetalhamentoCategoria(entity);
+    }
+
+    private void copyDtoToEntity(DadosCadastroCategoria dto, Category entity) {
+        if (dto != null && dto.name() != null) {
+            entity.setName(dto.name().trim());
+        }
     }
 }
