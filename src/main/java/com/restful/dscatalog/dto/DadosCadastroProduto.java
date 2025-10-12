@@ -2,14 +2,14 @@ package com.restful.dscatalog.dto;
 
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
-import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -22,10 +22,9 @@ public class DadosCadastroProduto {
     private Double price;
     private String imgUrl;
 
-    @Column(columnDefinition = "DATETIME(6)")
     private LocalDateTime date;
 
-    private List<DadosCadastroCategoria> categories = new ArrayList<>();
+    private List<Long> categoryIds = new ArrayList<>();
 
     public DadosCadastroProduto(Long id, String name, String description, Double price, String imgUrl) {
         this.id = id;
@@ -39,12 +38,13 @@ public class DadosCadastroProduto {
         this.id = product.getId();
         this.name = product.getName();
         this.description = product.getDescription();
-        this.price = product.getPrice().doubleValue();
+        this.price = product.getPrice() != null ? product.getPrice().doubleValue() : null;
         this.imgUrl = product.getImgUrl();
-    }
-
-    public DadosCadastroProduto(Product product, Set<Category> categories) {
-        this(product);
-        categories.forEach(cat -> this.categories.add(new DadosCadastroCategoria(categories.toString())));
+        this.date = product.getDate();
+        if (product.getCategories() != null) {
+            this.categoryIds = product.getCategories().stream()
+                    .map(Category::getId)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
     }
 }

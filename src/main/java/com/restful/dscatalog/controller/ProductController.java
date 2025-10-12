@@ -1,0 +1,142 @@
+package com.restful.dscatalog.controller;
+
+import com.restful.dscatalog.dto.DadosCadastroProduto;
+import com.restful.dscatalog.dto.DadosDetalhamentoProduto;
+import com.restful.dscatalog.entity.Product;
+import com.restful.dscatalog.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+
+import static org.springframework.http.ResponseEntity.created;
+import static org.springframework.http.ResponseEntity.ok;
+
+@RestController
+@RequestMapping("/api/v1/products")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+@Tag(name = "Product Controller", description = "Controller para gerenciamento de produtos")
+public class ProductController {
+
+    private final ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DadosDetalhamentoProduto> findById(@PathVariable Long id) {
+        Product product = productService.findById(id);
+        return ok(new DadosDetalhamentoProduto(product));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<DadosDetalhamentoProduto>> findAll(
+            @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao,
+            UriComponentsBuilder uriComponentsBuilder
+    ) {
+        Page<DadosDetalhamentoProduto> products = productService.listar(paginacao);
+        HttpHeaders headers = buildPaginationHeaders(products, paginacao, uriComponentsBuilder);
+        return ok().headers(headers).body(products);
+    }
+
+    @PostMapping
+    @Transactional
+    @Operation(
+            summary = "Cria um produto",
+            description = "Cria um produto a partir de um DTO",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Produto criado"),
+                    @ApiResponse(responseCode = "400", description = "Erro de validação")
+            }
+    )
+    public ResponseEntity<DadosDetalhamentoProduto> create(
+            @RequestBody @Valid DadosCadastroProduto dto,
+            UriComponentsBuilder uriComponentsBuilder
+    ) {
+        Product product = productService.create(dto);
+        URI uri = uriComponentsBuilder.path("/api/v1/products/{id}")
+                .buildAndExpand(product.getId()).toUri();
+        return created(uri).body(new DadosDetalhamentoProduto(product));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DadosDetalhamentoProduto> update(
+            @PathVariable Long id,
+            @RequestBody @Valid DadosCadastroProduto dto
+    ) {
+        DadosDetalhamentoProduto updated = productService.update(id, dto);
+        return ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<DadosDetalhamentoProduto> delete(@PathVariable Long id) {
+        DadosDetalhamentoProduto dto = productService.delete(id);
+        return ok(dto);
+    }
+
+    private HttpHeaders buildPaginationHeaders(
+            Page<?> page,
+            Pageable pageable,
+            UriComponentsBuilder uriBuilder
+    ) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Total-Count", String.valueOf(page.getTotalElements()));
+        headers.add("X-Page-Number", String.valueOf(pageable.getPageNumber()));
+        headers.add("X-Page-Size", String.valueOf(pageable.getPageSize()));
+
+        String link = buildLinkHeader(page, pageable, uriBuilder);
+        if (!link.isEmpty()) {
+            headers.add(HttpHeaders.LINK, link); // RFC 8288
+        }
+        return headers;
+    }
+
+    private String buildLinkHeader(
+            Page<?> page,
+            Pageable pageable,
+            UriComponentsBuilder uriBuilder
+    ) {
+        UriComponentsBuilder base = uriBuilder.cloneBuilder()
+                .replaceQueryParam("size", pageable.getPageSize())
+                .replaceQueryParam("sort");
+        if (pageable.getSort().isSorted()) {
+            pageable.getSort().forEach(order ->
+                    base.queryParam("sort", order.getProperty() + "," + order.getDirection().name().toLowerCase())
+            );
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (page.hasPrevious()) appendLink(sb, buildPageUrl(base, pageable.getPageNumber() - 1), "prev");
+        if (page.hasNext()) appendLink(sb, buildPageUrl(base, pageable.getPageNumber() + 1), "next");
+
+        if (page.getTotalPages() > 0) {
+            appendLink(sb, buildPageUrl(base, 0), "first");
+            appendLink(sb, buildPageUrl(base, page.getTotalPages() - 1), "last");
+        }
+        return sb.toString();
+    }
+
+    private static String buildPageUrl(UriComponentsBuilder base, int pageIndex) {
+        return base.cloneBuilder()
+                .replaceQueryParam("page", pageIndex)
+                .build(true)
+                .toUriString();
+    }
+
+    private static void appendLink(StringBuilder sb, String url, String rel) {
+        if (url == null || url.isEmpty()) return;
+        if (!sb.isEmpty()) sb.append(", ");
+        sb.append("<").append(url).append(">; rel=\"").append(rel).append("\"");
+    }
+}
