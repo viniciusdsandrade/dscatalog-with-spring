@@ -2,6 +2,8 @@ package com.restful.dscatalog.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
+import static org.hibernate.annotations.FetchMode.SUBSELECT;
 
 @ToString
 @EqualsAndHashCode(callSuper = false)
@@ -31,15 +34,13 @@ public class Product {
     @Column(columnDefinition = "DATETIME(6)")
     private LocalDateTime date;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "tb_product_category",
             joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id"),
-            uniqueConstraints = @UniqueConstraint(
-                    name = "uk_product_category",
-                    columnNames = {"product_id", "category_id"}
-            )
+            inverseJoinColumns = @JoinColumn(name = "category_id")
     )
+    @Fetch(SUBSELECT)
+    @BatchSize(size = 50)
     private Set<Category> categories = new HashSet<>();
 }
