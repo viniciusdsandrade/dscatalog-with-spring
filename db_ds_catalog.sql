@@ -6,3 +6,5 @@ USE db_ds_catalog;
 SHOW TABLES FROM db_ds_catalog;
 SHOW FULL TABLES FROM db_ds_catalog;
 DESCRIBE tb_category;
+DESCRIBE tb_product;
+DESCRIBE tb_product_category;
