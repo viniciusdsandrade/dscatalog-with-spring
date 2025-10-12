@@ -20,7 +20,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service("productService")
@@ -29,10 +34,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductServiceImpl(
-            ProductRepository productRepository,
-            CategoryRepository categoryRepository
-    ) {
+    public ProductServiceImpl(ProductRepository productRepository,
+                              CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
@@ -42,7 +45,8 @@ public class ProductServiceImpl implements ProductService {
     public Product create(@Valid DadosCadastroProduto dto) {
         try {
             Product p = new Product();
-            copyDtoToEntity(dto, p); // mapeamento whitelist
+            applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
+            applyCategoriesByIds(dto.categoryIds(), p);
             productRepository.saveAndFlush(p);
             return p;
         } catch (DataIntegrityViolationException e) {
@@ -53,37 +57,16 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public Product createByCategoryNames(@Valid DadosCadastroProdutoPorNome dto) {
-        List<String> normalized = dto.categoryNames().stream()
-                .map(s -> s == null ? "" : s.trim())
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .toList();
-
-        Set<Category> categorias = new LinkedHashSet<>();
-        for (String name : normalized) {
-            Category cat = categoryRepository.findByNameIgnoreCase(name).orElse(null);
-            if (cat == null) {
-                try {
-                    cat = new Category(new DadosCadastroCategoria(name));
-                    cat = categoryRepository.saveAndFlush(cat);
-                } catch (DataIntegrityViolationException dup) {
-                    cat = categoryRepository.findByNameIgnoreCase(name)
-                            .orElseThrow(() -> dup);
-                }
-            }
-            categorias.add(cat);
+        try {
+            Product p = new Product();
+            applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(),
+                    dto.date() != null ? dto.date() : LocalDateTime.now(), p);
+            applyCategoriesByNames(dto.categoryNames(), p);
+            productRepository.saveAndFlush(p);
+            return p;
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateEntryException("Entrada duplicada para Produto.");
         }
-
-        Product p = new Product();
-        p.setName(dto.name());
-        p.setDescription(dto.description());
-        p.setPrice(BigDecimal.valueOf(dto.price()));
-        p.setImgUrl(dto.imgUrl());
-        p.setDate(dto.date() != null ? dto.date() : LocalDateTime.now());
-        p.setCategories(categorias);
-
-        productRepository.saveAndFlush(p);
-        return p;
     }
 
     @Override
@@ -92,31 +75,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
     public Page<DadosDetalhamentoProduto> listar(Pageable paginacao) {
-        Page<Product> page = productRepository.findAll(paginacao);
-        if (page.isEmpty()) return page.map(DadosDetalhamentoProduto::new);
-
-        List<Long> ids = page.getContent().stream()
-                .map(Product::getId)
-                .toList();
-
-        var fetched = productRepository.findAllWithCategoriesByIdIn(ids);
-
-        var byId = fetched.stream().collect(
-                java.util.stream.Collectors.toMap(
-                        Product::getId, p -> p, (a, b) -> a, java.util.LinkedHashMap::new
-                )
-        );
-
-        return page.map(p -> new DadosDetalhamentoProduto(byId.getOrDefault(p.getId(), p)));
+        return productRepository.findAll(paginacao).map(DadosDetalhamentoProduto::new);
     }
 
     @Transactional
     @Override
     public @Valid DadosDetalhamentoProduto update(Long id, @Valid DadosCadastroProduto dto) {
         Product p = productRepository.getReferenceById(id);
-        copyDtoToEntity(dto, p); // mapeamento whitelist
+
+        applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
+
+        if (dto.categoryIds() != null) {
+            applyCategoriesByIds(dto.categoryIds(), p);
+        }
+
         productRepository.save(p);
         return new DadosDetalhamentoProduto(p);
     }
@@ -128,6 +101,52 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
         productRepository.delete(entity);
         return new DadosDetalhamentoProduto(entity);
+    }
+
+    private void applyScalarFields(String name,
+                                   String description,
+                                   Double price,
+                                   String imgUrl,
+                                   LocalDateTime date,
+                                   Product entity) {
+        if (name != null) entity.setName(name.trim());
+        if (description != null) entity.setDescription(description);
+        if (price != null) entity.setPrice(BigDecimal.valueOf(price));
+        if (imgUrl != null) entity.setImgUrl(imgUrl);
+        if (date != null) entity.setDate(date);
+    }
+
+    private void applyCategoriesByIds(List<Long> categoryIds, Product entity) {
+        entity.getCategories().clear();
+        if (categoryIds == null || categoryIds.isEmpty()) return;
+        entity.getCategories().addAll(resolveCategories(categoryIds));
+    }
+
+    private void applyCategoriesByNames(Collection<String> rawNames, Product entity) {
+        entity.getCategories().clear();
+        if (rawNames == null || rawNames.isEmpty()) return;
+
+        LinkedHashSet<String> normalized = normalizeNames(rawNames);
+        for (String normalizedLower : normalized) {
+            Category cat = findOrCreateCategoryCaseInsensitive(normalizedLower);
+            entity.getCategories().add(cat);
+        }
+    }
+
+    private LinkedHashSet<String> normalizeNames(Collection<String> names) {
+        return names.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Category findOrCreateCategoryCaseInsensitive(String normalizedLower) {
+        return categoryRepository.findByNameIgnoreCase(normalizedLower)
+                .orElseGet(() -> categoryRepository.saveAndFlush(
+                        new Category(new DadosCadastroCategoria(capitalize(normalizedLower)))
+                ));
     }
 
     private Set<Category> resolveCategories(List<Long> categoryIds) {
@@ -143,51 +162,9 @@ public class ProductServiceImpl implements ProductService {
         return found;
     }
 
-    private void copyDtoToEntity(DadosCadastroProduto dto, Product entity) {
-        // escalares
-        if (dto.getName() != null)        entity.setName(dto.getName().trim()); // whitelist
-        if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
-        if (dto.getPrice() != null)       entity.setPrice(BigDecimal.valueOf(dto.getPrice()));
-        if (dto.getImgUrl() != null)      entity.setImgUrl(dto.getImgUrl());
-        if (dto.getDate() != null)        entity.setDate(dto.getDate());
-
-        // associação N:N: valida ids e repovoa mantendo semântica de erro 404
-        entity.getCategories().clear();
-        if (dto.getCategoryIds() != null && !dto.getCategoryIds().isEmpty()) {
-            entity.getCategories().addAll(resolveCategories(dto.getCategoryIds()));
-        }
-
-    }
-
-    private void copyDtoToEntityByNames(DadosCadastroProdutoPorNome dto, Product entity) {
-        if (dto.name() != null)        entity.setName(dto.name().trim());
-        if (dto.description() != null) entity.setDescription(dto.description());
-        if (dto.price() != null)       entity.setPrice(BigDecimal.valueOf(dto.price()));
-        if (dto.imgUrl() != null)      entity.setImgUrl(dto.imgUrl());
-        if (dto.date() != null)        entity.setDate(dto.date());
-
-        entity.getCategories().clear();
-        if (dto.categoryNames() != null && !dto.categoryNames().isEmpty()) {
-            // normaliza, deduplica
-            LinkedHashSet<String> names = dto.categoryNames().stream()
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            for (String normalized : names) {
-                Category cat = categoryRepository
-                        .findByNameIgnoreCase(normalized)
-                        .orElseGet(() -> categoryRepository.save(new Category(capitalize(normalized))));
-                entity.getCategories().add(cat);
-            }
-        }
-    }
-
-    // util local (se preferir, extraia)
     private static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
-        return s.substring(0, 1).toUpperCase() + s.substring(1);
+        if (s.length() == 1) return s.toUpperCase();
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 }
