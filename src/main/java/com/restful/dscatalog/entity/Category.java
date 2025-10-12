@@ -1,6 +1,6 @@
 package com.restful.dscatalog.entity;
 
-import com.restful.dscatalog.dto.DadosCadastroCategoria;
+import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

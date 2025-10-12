@@ -1,4 +1,4 @@
-package com.restful.dscatalog.dto;
+package com.restful.dscatalog.dto.categoria;
 
 import com.restful.dscatalog.entity.Category;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -1,7 +1,8 @@
 package com.restful.dscatalog.controller;
 
-import com.restful.dscatalog.dto.DadosCadastroProduto;
-import com.restful.dscatalog.dto.DadosDetalhamentoProduto;
+import com.restful.dscatalog.dto.product.DadosCadastroProduto;
+import com.restful.dscatalog.dto.product.DadosCadastroProdutoPorNome;
+import com.restful.dscatalog.dto.product.DadosDetalhamentoProduto;
 import com.restful.dscatalog.entity.Product;
 import com.restful.dscatalog.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +71,25 @@ public class ProductController {
         return created(uri).body(new DadosDetalhamentoProduto(product));
     }
 
+    @PostMapping("/by-names")
+    @Transactional
+    @Operation(
+            summary = "Cria produto por nomes de categorias (case-insensitive)",
+            description = "Se a categoria não existir, será criada. Nomes são normalizados (trim) e deduplicados.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Produto criado"),
+                    @ApiResponse(responseCode = "400", description = "Erro de validação")
+            }
+    )
+    public ResponseEntity<DadosDetalhamentoProduto> createByNames(
+            @RequestBody @Valid DadosCadastroProdutoPorNome dto,
+            UriComponentsBuilder uriComponentsBuilder
+    ) {
+        Product product = productService.createByCategoryNames(dto);
+        URI uri = uriComponentsBuilder.path("/api/v1/products/{id}").buildAndExpand(product.getId()).toUri();
+        return created(uri).body(new DadosDetalhamentoProduto(product));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<DadosDetalhamentoProduto> update(
             @PathVariable Long id,
@@ -97,7 +117,7 @@ public class ProductController {
 
         String link = buildLinkHeader(page, pageable, uriBuilder);
         if (!link.isEmpty()) {
-            headers.add(HttpHeaders.LINK, link); // RFC 8288
+            headers.add(HttpHeaders.LINK, link);
         }
         return headers;
     }

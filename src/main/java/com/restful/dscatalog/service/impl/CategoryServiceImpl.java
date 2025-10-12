@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service.impl;
 
-import com.restful.dscatalog.dto.DadosCadastroCategoria;
-import com.restful.dscatalog.dto.DadosDetalhamentoCategoria;
+import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
+import com.restful.dscatalog.dto.categoria.DadosDetalhamentoCategoria;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.repository.CategoryRepository;

@@ -1,4 +1,4 @@
-package com.restful.dscatalog.dto;
+package com.restful.dscatalog.dto.product;
 
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
