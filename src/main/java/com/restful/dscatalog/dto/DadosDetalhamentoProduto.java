@@ -1,0 +1,32 @@
+package com.restful.dscatalog.dto;
+
+import com.restful.dscatalog.entity.Product;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public record DadosDetalhamentoProduto(
+        Long id,
+        String name,
+        String description,
+        BigDecimal price,
+        String imgUrl,
+        LocalDateTime date,
+        Set<DadosDetalhamentoCategoria> categories
+) {
+    public DadosDetalhamentoProduto(Product p) {
+        this(
+                p.getId(),
+                p.getName(),
+                p.getDescription(),
+                p.getPrice(),
+                p.getImgUrl(),
+                p.getDate(),
+                p.getCategories().stream()
+                        .map(DadosDetalhamentoCategoria::new)
+                        .collect(Collectors.toUnmodifiableSet())
+        );
+    }
+}
