@@ -35,7 +35,11 @@ public class Product {
     @JoinTable(
             name = "tb_product_category",
             joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
+            inverseJoinColumns = @JoinColumn(name = "category_id"),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uk_product_category",
+                    columnNames = {"product_id", "category_id"}
+            )
     )
-    Set<Category> categories = new HashSet<>();
+    private Set<Category> categories = new HashSet<>();
 }
