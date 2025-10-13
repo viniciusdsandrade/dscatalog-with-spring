@@ -1,8 +1,8 @@
 package com.restful.dscatalog.service;
 
-import com.restful.dscatalog.dto.product.DadosCadastroProduto;
-import com.restful.dscatalog.dto.product.DadosCadastroProdutoPorNome;
-import com.restful.dscatalog.dto.product.DadosDetalhamentoProduto;
+import com.restful.dscatalog.dto.product.ProductionRegistrationDTO;
+import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Product;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -14,22 +14,21 @@ import java.util.List;
 public interface ProductService {
 
     @Transactional
-    Product create(@Valid DadosCadastroProduto dto);
+    Product create(@Valid ProductionRegistrationDTO dto);
 
     @Transactional
-    Product createByCategoryNames(DadosCadastroProdutoPorNome dto);
+    Product createByCategoryNames(ProductionPostByNameDTO dto);
 
     Product findById(Long id);
 
-    Page<DadosDetalhamentoProduto> listar(Pageable paginacao);
+    Page<ProductDetailsDTO> listAll(Pageable paginacao);
 
-
-    List<DadosDetalhamentoProduto> listarWithoutPagination();
+    List<ProductDetailsDTO> listAllWithoutPagination();
 
     @Transactional
     @Valid
-    DadosDetalhamentoProduto update(Long id, @Valid DadosCadastroProduto dto);
+    ProductDetailsDTO update(Long id, @Valid ProductionRegistrationDTO dto);
 
     @Transactional
-    DadosDetalhamentoProduto delete(Long id);
+    ProductDetailsDTO delete(Long id);
 }

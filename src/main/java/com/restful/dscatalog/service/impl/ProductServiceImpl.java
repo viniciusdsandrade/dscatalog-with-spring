@@ -1,9 +1,9 @@
 package com.restful.dscatalog.service.impl;
 
-import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
-import com.restful.dscatalog.dto.product.DadosCadastroProduto;
-import com.restful.dscatalog.dto.product.DadosCadastroProdutoPorNome;
-import com.restful.dscatalog.dto.product.DadosDetalhamentoProduto;
+import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.product.ProductionRegistrationDTO;
+import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
 import com.restful.dscatalog.exception.DuplicateEntryException;
@@ -42,7 +42,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product create(@Valid DadosCadastroProduto dto) {
+    public Product create(@Valid ProductionRegistrationDTO dto) {
         try {
             Product p = new Product();
             applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
@@ -56,7 +56,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product createByCategoryNames(@Valid DadosCadastroProdutoPorNome dto) {
+    public Product createByCategoryNames(@Valid ProductionPostByNameDTO dto) {
         try {
             Product p = new Product();
             applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(),
@@ -75,12 +75,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<DadosDetalhamentoProduto> listar(Pageable paginacao) {
-        return productRepository.findAll(paginacao).map(DadosDetalhamentoProduto::new);
+    public Page<ProductDetailsDTO> listAll(Pageable paginacao) {
+        return productRepository.findAll(paginacao).map(ProductDetailsDTO::new);
     }
 
     @Override
-    public List<DadosDetalhamentoProduto> listarWithoutPagination() {
+    public List<ProductDetailsDTO> listAllWithoutPagination() {
         List<Long> ids = productRepository.findAll()
                 .stream()
                 .map(Product::getId)
@@ -90,13 +90,13 @@ public class ProductServiceImpl implements ProductService {
 
         return productRepository.findAllWithCategoriesByIdIn(ids)
                 .stream()
-                .map(DadosDetalhamentoProduto::new)
+                .map(ProductDetailsDTO::new)
                 .toList();
     }
 
     @Transactional
     @Override
-    public @Valid DadosDetalhamentoProduto update(Long id, @Valid DadosCadastroProduto dto) {
+    public @Valid ProductDetailsDTO update(Long id, @Valid ProductionRegistrationDTO dto) {
         Product p = productRepository.getReferenceById(id);
 
         applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
@@ -106,16 +106,16 @@ public class ProductServiceImpl implements ProductService {
         }
 
         productRepository.save(p);
-        return new DadosDetalhamentoProduto(p);
+        return new ProductDetailsDTO(p);
     }
 
     @Transactional
     @Override
-    public DadosDetalhamentoProduto delete(Long id) {
+    public ProductDetailsDTO delete(Long id) {
         var entity = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
         productRepository.delete(entity);
-        return new DadosDetalhamentoProduto(entity);
+        return new ProductDetailsDTO(entity);
     }
 
     private void applyScalarFields(String name,
@@ -160,7 +160,7 @@ public class ProductServiceImpl implements ProductService {
     private Category findOrCreateCategoryCaseInsensitive(String normalizedLower) {
         return categoryRepository.findByNameIgnoreCase(normalizedLower)
                 .orElseGet(() -> categoryRepository.saveAndFlush(
-                        new Category(new DadosCadastroCategoria(capitalize(normalizedLower)))
+                        new Category(new CategoryPostDTO(capitalize(normalizedLower)))
                 ));
     }
 

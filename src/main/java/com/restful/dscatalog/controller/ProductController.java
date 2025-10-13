@@ -1,8 +1,8 @@
 package com.restful.dscatalog.controller;
 
-import com.restful.dscatalog.dto.product.DadosCadastroProduto;
-import com.restful.dscatalog.dto.product.DadosCadastroProdutoPorNome;
-import com.restful.dscatalog.dto.product.DadosDetalhamentoProduto;
+import com.restful.dscatalog.dto.product.ProductionRegistrationDTO;
+import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Product;
 import com.restful.dscatalog.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,24 +37,24 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoProduto> findById(@PathVariable Long id) {
+    public ResponseEntity<ProductDetailsDTO> findById(@PathVariable Long id) {
         Product product = productService.findById(id);
-        return ok(new DadosDetalhamentoProduto(product));
+        return ok(new ProductDetailsDTO(product));
     }
 
     @GetMapping
-    public ResponseEntity<Page<DadosDetalhamentoProduto>> findAll(
+    public ResponseEntity<Page<ProductDetailsDTO>> findAll(
             @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Page<DadosDetalhamentoProduto> products = productService.listar(paginacao);
+        Page<ProductDetailsDTO> products = productService.listAll(paginacao);
         HttpHeaders headers = buildPaginationHeaders(products, paginacao, uriComponentsBuilder);
         return ok().headers(headers).body(products);
     }
 
     @GetMapping("/without-pagination")
-    public ResponseEntity<List<DadosDetalhamentoProduto>> findAllWithoutPagination() {
-        List<DadosDetalhamentoProduto> products = productService.listarWithoutPagination();
+    public ResponseEntity<List<ProductDetailsDTO>> findAllWithoutPagination() {
+        List<ProductDetailsDTO> products = productService.listAllWithoutPagination();
         return ok(products);
     }
 
@@ -68,14 +68,14 @@ public class ProductController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
-    public ResponseEntity<DadosDetalhamentoProduto> create(
-            @RequestBody @Valid DadosCadastroProduto dto,
+    public ResponseEntity<ProductDetailsDTO> create(
+            @RequestBody @Valid ProductionRegistrationDTO dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Product product = productService.create(dto);
         URI uri = uriComponentsBuilder.path("/api/v1/products/{id}")
                 .buildAndExpand(product.getId()).toUri();
-        return created(uri).body(new DadosDetalhamentoProduto(product));
+        return created(uri).body(new ProductDetailsDTO(product));
     }
 
     @PostMapping("/by-names")
@@ -88,27 +88,27 @@ public class ProductController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
-    public ResponseEntity<DadosDetalhamentoProduto> createByNames(
-            @RequestBody @Valid DadosCadastroProdutoPorNome dto,
+    public ResponseEntity<ProductDetailsDTO> createByNames(
+            @RequestBody @Valid ProductionPostByNameDTO dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Product product = productService.createByCategoryNames(dto);
         URI uri = uriComponentsBuilder.path("/api/v1/products/{id}").buildAndExpand(product.getId()).toUri();
-        return created(uri).body(new DadosDetalhamentoProduto(product));
+        return created(uri).body(new ProductDetailsDTO(product));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoProduto> update(
+    public ResponseEntity<ProductDetailsDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid DadosCadastroProduto dto
+            @RequestBody @Valid ProductionRegistrationDTO dto
     ) {
-        DadosDetalhamentoProduto updated = productService.update(id, dto);
+        ProductDetailsDTO updated = productService.update(id, dto);
         return ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoProduto> delete(@PathVariable Long id) {
-        DadosDetalhamentoProduto dto = productService.delete(id);
+    public ResponseEntity<ProductDetailsDTO> delete(@PathVariable Long id) {
+        ProductDetailsDTO dto = productService.delete(id);
         return ok(dto);
     }
 

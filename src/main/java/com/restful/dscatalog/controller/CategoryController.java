@@ -1,8 +1,8 @@
 package com.restful.dscatalog.controller;
 
 
-import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
-import com.restful.dscatalog.dto.categoria.DadosDetalhamentoCategoria;
+import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,17 +36,17 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoCategoria> findById(@PathVariable Long id) {
+    public ResponseEntity<CategoryDetailsDTO> findById(@PathVariable Long id) {
         Category category = categoryService.findById(id);
-        return ok(new DadosDetalhamentoCategoria(category));
+        return ok(new CategoryDetailsDTO(category));
     }
 
     @GetMapping
-    public ResponseEntity<Page<DadosDetalhamentoCategoria>> findAll(
+    public ResponseEntity<Page<CategoryDetailsDTO>> findAll(
             @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Page<DadosDetalhamentoCategoria> categories = categoryService.listar(paginacao);
+        Page<CategoryDetailsDTO> categories = categoryService.listar(paginacao);
         HttpHeaders headers = buildPaginationHeaders(categories, paginacao, uriComponentsBuilder);
         return ok().headers(headers).body(categories);
     }
@@ -61,26 +61,26 @@ public class CategoryController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
-    public ResponseEntity<DadosDetalhamentoCategoria> create(
-            @RequestBody @Valid DadosCadastroCategoria dto,
+    public ResponseEntity<CategoryDetailsDTO> create(
+            @RequestBody @Valid CategoryPostDTO dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Category category = categoryService.create(dto);
         URI uri = uriComponentsBuilder.path("/api/v1/categories/{id}").buildAndExpand(category.getId()).toUri();
-        return created(uri).body(new DadosDetalhamentoCategoria(category));
+        return created(uri).body(new CategoryDetailsDTO(category));
     }
 
     @PutMapping(value = "/{id}")
-    public ResponseEntity<DadosDetalhamentoCategoria> update(
+    public ResponseEntity<CategoryDetailsDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid DadosCadastroCategoria dto
+            @RequestBody @Valid CategoryPostDTO dto
     ) {
-        DadosDetalhamentoCategoria updatedCategory = categoryService.update(id, dto);
+        CategoryDetailsDTO updatedCategory = categoryService.update(id, dto);
         return ok(updatedCategory);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<DadosDetalhamentoCategoria> delete(@PathVariable Long id) {
+    public ResponseEntity<CategoryDetailsDTO> delete(@PathVariable Long id) {
         var dto = categoryService.delete(id);
         return ok(dto);
     }

@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(name = "DadosCadastroProdutoPorNome")
-public record DadosCadastroProdutoPorNome(
+public record ProductionPostByNameDTO(
         @NotBlank(message = "name é obrigatório")
         String name,
 

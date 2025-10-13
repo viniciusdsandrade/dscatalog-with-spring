@@ -9,7 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record DadosDetalhamentoProduto(
+public record ProductDetailsDTO(
         Long id,
         String name,
         String description,
@@ -18,7 +18,7 @@ public record DadosDetalhamentoProduto(
         LocalDateTime date,
         Set<String> categoryNames
 ) {
-    public DadosDetalhamentoProduto(Product p) {
+    public ProductDetailsDTO(Product p) {
         this(
                 p.getId(),
                 p.getName(),

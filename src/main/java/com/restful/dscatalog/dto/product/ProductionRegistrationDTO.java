@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record DadosCadastroProduto(
+public record ProductionRegistrationDTO(
         Long id,
         String name,
         String description,
@@ -18,15 +18,15 @@ public record DadosCadastroProduto(
         List<Long> categoryIds
 ) {
 
-    public DadosCadastroProduto {
+    public ProductionRegistrationDTO {
         categoryIds = (categoryIds == null) ? List.of() : List.copyOf(categoryIds);
     }
 
-    public DadosCadastroProduto(Long id, String name, String description, Double price, String imgUrl) {
+    public ProductionRegistrationDTO(Long id, String name, String description, Double price, String imgUrl) {
         this(id, name, description, price, imgUrl, null, List.of());
     }
 
-    public DadosCadastroProduto(Product product) {
+    public ProductionRegistrationDTO(Product product) {
         this(
                 product.getId(),
                 product.getName(),

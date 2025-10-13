@@ -1,6 +1,6 @@
 package com.restful.dscatalog.entity;
 
-import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
+import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -38,7 +38,7 @@ public class Category implements Cloneable {
     @Column(name = "updated_at", columnDefinition = "DATETIME(6)")
     private LocalDateTime updatedAt;
 
-    public Category(DadosCadastroCategoria name) {
+    public Category(CategoryPostDTO name) {
         this.name = name.name();
     }
 

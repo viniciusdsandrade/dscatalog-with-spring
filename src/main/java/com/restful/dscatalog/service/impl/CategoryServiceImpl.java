@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service.impl;
 
-import com.restful.dscatalog.dto.categoria.DadosCadastroCategoria;
-import com.restful.dscatalog.dto.categoria.DadosDetalhamentoCategoria;
+import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.repository.CategoryRepository;
@@ -25,7 +25,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public Category create(@Valid DadosCadastroCategoria category) {
+    public Category create(@Valid CategoryPostDTO category) {
         try {
             Category newCategory = new Category(category);
             categoryRepository.saveAndFlush(newCategory);
@@ -41,29 +41,29 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Page<DadosDetalhamentoCategoria> listar(Pageable paginacao) {
-        return categoryRepository.findAll(paginacao).map(DadosDetalhamentoCategoria::new);
+    public Page<CategoryDetailsDTO> listar(Pageable paginacao) {
+        return categoryRepository.findAll(paginacao).map(CategoryDetailsDTO::new);
     }
 
     @Override
     @Transactional
-    public @Valid DadosDetalhamentoCategoria update(Long id, DadosCadastroCategoria dto) {
+    public @Valid CategoryDetailsDTO update(Long id, CategoryPostDTO dto) {
         Category category = categoryRepository.getReferenceById(id);
         copyDtoToEntity(dto, category);
         categoryRepository.save(category);
-        return new DadosDetalhamentoCategoria(category);
+        return new CategoryDetailsDTO(category);
     }
 
     @Override
     @Transactional
-    public DadosDetalhamentoCategoria delete(Long id) {
+    public CategoryDetailsDTO delete(Long id) {
         var entity = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
         categoryRepository.delete(entity);
-        return new DadosDetalhamentoCategoria(entity);
+        return new CategoryDetailsDTO(entity);
     }
 
-    private void copyDtoToEntity(DadosCadastroCategoria dto, Category entity) {
+    private void copyDtoToEntity(CategoryPostDTO dto, Category entity) {
         if (dto != null && dto.name() != null) {
             entity.setName(dto.name().trim());
         }
