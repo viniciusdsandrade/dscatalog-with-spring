@@ -1,7 +1,7 @@
 package com.restful.dscatalog.handler;
 
 import com.restful.dscatalog.exception.DuplicateEntryException;
-import com.restful.dscatalog.exception.ValidacaoException;
+import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.persistence.EntityNotFoundException;
@@ -102,8 +102,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(ValidacaoException.class)
-    public ResponseEntity<List<ErrorDetails>> handleValidacaoException(ValidacaoException exception,
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<List<ErrorDetails>> handleValidacaoException(ValidationException exception,
                                                                        WebRequest webRequest) {
 
         ErrorDetails errorDetails = new ErrorDetails(
