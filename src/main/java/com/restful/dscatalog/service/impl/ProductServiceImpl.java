@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service.impl;
 
 import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
-import com.restful.dscatalog.dto.product.ProductionRegistrationDTO;
+import com.restful.dscatalog.dto.product.ProductionPostDTO;
 import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Category;
@@ -42,7 +42,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product create(@Valid ProductionRegistrationDTO dto) {
+    public Product create(@Valid ProductionPostDTO dto) {
         try {
             Product p = new Product();
             applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
@@ -96,7 +96,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public @Valid ProductDetailsDTO update(Long id, @Valid ProductionRegistrationDTO dto) {
+    public @Valid ProductDetailsDTO update(Long id, @Valid ProductionPostDTO dto) {
         Product p = productRepository.getReferenceById(id);
 
         applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);

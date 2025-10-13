@@ -41,7 +41,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Page<CategoryDetailsDTO> listar(Pageable paginacao) {
+    public Page<CategoryDetailsDTO> listAll(Pageable paginacao) {
         return categoryRepository.findAll(paginacao).map(CategoryDetailsDTO::new);
     }
 

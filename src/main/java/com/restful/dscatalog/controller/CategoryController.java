@@ -46,7 +46,7 @@ public class CategoryController {
             @PageableDefault(size = 5, sort = {"id"}) Pageable paginacao,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Page<CategoryDetailsDTO> categories = categoryService.listar(paginacao);
+        Page<CategoryDetailsDTO> categories = categoryService.listAll(paginacao);
         HttpHeaders headers = buildPaginationHeaders(categories, paginacao, uriComponentsBuilder);
         return ok().headers(headers).body(categories);
     }

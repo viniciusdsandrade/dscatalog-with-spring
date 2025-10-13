@@ -15,7 +15,7 @@ public interface CategoryService {
 
     Category findById(Long id);
 
-    Page<CategoryDetailsDTO> listar(Pageable paginacao);
+    Page<CategoryDetailsDTO> listAll(Pageable paginacao);
 
     @Transactional
     @Valid
