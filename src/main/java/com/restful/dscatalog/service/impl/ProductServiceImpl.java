@@ -79,6 +79,21 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findAll(paginacao).map(DadosDetalhamentoProduto::new);
     }
 
+    @Override
+    public List<DadosDetalhamentoProduto> listarWithoutPagination() {
+        List<Long> ids = productRepository.findAll()
+                .stream()
+                .map(Product::getId)
+                .toList();
+
+        if (ids.isEmpty()) return List.of();
+
+        return productRepository.findAllWithCategoriesByIdIn(ids)
+                .stream()
+                .map(DadosDetalhamentoProduto::new)
+                .toList();
+    }
+
     @Transactional
     @Override
     public @Valid DadosDetalhamentoProduto update(Long id, @Valid DadosCadastroProduto dto) {

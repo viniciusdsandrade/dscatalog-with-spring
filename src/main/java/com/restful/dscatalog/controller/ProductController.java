@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 import static org.springframework.http.ResponseEntity.created;
 import static org.springframework.http.ResponseEntity.ok;
@@ -49,6 +50,12 @@ public class ProductController {
         Page<DadosDetalhamentoProduto> products = productService.listar(paginacao);
         HttpHeaders headers = buildPaginationHeaders(products, paginacao, uriComponentsBuilder);
         return ok().headers(headers).body(products);
+    }
+
+    @GetMapping("/without-pagination")
+    public ResponseEntity<List<DadosDetalhamentoProduto>> findAllWithoutPagination() {
+        List<DadosDetalhamentoProduto> products = productService.listarWithoutPagination();
+        return ok(products);
     }
 
     @PostMapping
