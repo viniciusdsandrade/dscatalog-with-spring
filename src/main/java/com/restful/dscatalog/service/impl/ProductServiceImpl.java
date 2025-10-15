@@ -6,7 +6,9 @@ import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
+import com.restful.dscatalog.exception.DatabaseException;
 import com.restful.dscatalog.exception.DuplicateEntryException;
+import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.repository.ProductRepository;
 import com.restful.dscatalog.service.ProductService;
@@ -113,9 +115,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDetailsDTO delete(Long id) {
         var entity = productRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
-        productRepository.delete(entity);
-        return new ProductDetailsDTO(entity);
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+        try {
+            productRepository.delete(entity);
+            productRepository.flush();
+            return new ProductDetailsDTO(entity);
+        } catch (DataIntegrityViolationException e) {
+            throw new DatabaseException("Violação de integridade referencial");
+        }
     }
 
     private void applyScalarFields(String name,

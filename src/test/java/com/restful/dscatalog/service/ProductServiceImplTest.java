@@ -4,6 +4,8 @@ import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.dto.product.ProductPostDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
+import com.restful.dscatalog.exception.DatabaseException;
+import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.repository.ProductRepository;
 import com.restful.dscatalog.service.impl.ProductServiceImpl;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 
 import java.math.BigDecimal;
@@ -173,5 +176,42 @@ class ProductServiceImplTest {
 
         assertThat(dto.id()).isEqualTo(200L);
         verify(productRepository).delete(e);
+    }
+
+
+    @Test
+    @DisplayName("deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist")
+    void deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+        long missingId = 12345L;
+        given(productRepository.findById(missingId)).willReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.delete(missingId));
+        verify(productRepository, never()).delete(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("deleteShouldDoNothingWhenIdExists")
+    void deleteShouldDoNothingWhenIdExists() {
+        long existingId = 7L;
+        Product entity = withId(newProduct("Existing", 10.0), existingId);
+        given(productRepository.findById(existingId)).willReturn(Optional.of(entity));
+        doNothing().when(productRepository).delete(entity);
+
+        ProductDetailsDTO dto = service.delete(existingId);
+
+        assertThat(dto.id()).isEqualTo(existingId);
+        verify(productRepository).delete(entity);
+    }
+
+    @Test
+    @DisplayName("deleteShouldThrowDatabaseExceptionWhenDependentID")
+    void deleteShouldThrowDatabaseExceptionWhenDependentID() {
+        long dependentId = 9L;
+        Product entity = withId(newProduct("Dependent", 20.0), dependentId);
+        given(productRepository.findById(dependentId)).willReturn(Optional.of(entity));
+        doThrow(new DataIntegrityViolationException("FK violation"))
+                .when(productRepository).delete(entity);
+        assertThrows(DatabaseException.class, () -> service.delete(dependentId));
+        verify(productRepository).delete(entity);
     }
 }
