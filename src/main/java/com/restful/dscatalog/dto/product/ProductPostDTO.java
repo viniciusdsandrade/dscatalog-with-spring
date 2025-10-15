@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProductPostDTO(
-        Long id,
-
         @NotBlank(message = "name é obrigatório")
         String name,
 
