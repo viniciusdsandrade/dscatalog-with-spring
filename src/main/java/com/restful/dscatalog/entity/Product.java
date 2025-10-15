@@ -14,6 +14,7 @@ import java.util.Set;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
+import static lombok.AccessLevel.NONE;
 import static org.hibernate.annotations.FetchMode.SUBSELECT;
 
 @ToString
@@ -27,14 +28,14 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
-    @Setter(AccessLevel.NONE)
+    @Setter(NONE)
     private Long id;
     private String name;
     private String description;
     private BigDecimal price;
     private String imgUrl;
 
-    @Column(columnDefinition = "DATETIME(6)")
+    @Column(columnDefinition = "DATETIME(6)", nullable = false)
     private LocalDateTime date;
 
     @ManyToMany(fetch = LAZY)
@@ -45,7 +46,7 @@ public class Product {
     )
     @Fetch(SUBSELECT)
     @BatchSize(size = 50)
-    @Setter(AccessLevel.NONE)
+    @Setter(NONE)
     @ToString.Exclude
     private Set<Category> categories = new HashSet<>();
 

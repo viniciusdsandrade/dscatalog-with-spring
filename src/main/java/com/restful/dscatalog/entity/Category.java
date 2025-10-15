@@ -5,16 +5,19 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 
-@AllArgsConstructor
-@NoArgsConstructor
+@ToString
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity(name = "Category")
 @Table(
         name = "tb_category",
@@ -31,7 +34,7 @@ public class Category implements Cloneable {
     private String name;
 
     @CreationTimestamp
-    @Column(name = "created_at", columnDefinition = "DATETIME(6)")
+    @Column(name = "created_at", columnDefinition = "DATETIME(6)", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
@@ -65,35 +68,18 @@ public class Category implements Cloneable {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int hash = 1;
-
-        hash *= prime + (id == 0 ? 0 : Long.hashCode(id));
-        hash *= prime + ((name == null) ? 0 : name.hashCode());
-
-        if (hash < 0) hash = -hash;
-
-        return hash;
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        Category category = (Category) o;
+        return getId() != null && Objects.equals(getId(), category.getId());
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (this.getClass() != obj.getClass()) return false;
-
-        Category other = (Category) obj;
-
-        return Objects.equals(this.id, other.id) &&
-               Objects.equals(this.name, other.name);
-    }
-
-    @Override
-    public String toString() {
-        return "{\"Category\":{" +
-               "\"id\":" + id +
-               ", \"name\":\"" + name + '\"' +
-               "}}";
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 }
