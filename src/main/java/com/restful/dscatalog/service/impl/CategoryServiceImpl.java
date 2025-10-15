@@ -3,10 +3,11 @@ package com.restful.dscatalog.service.impl;
 import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
 import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
 import com.restful.dscatalog.entity.Category;
+import com.restful.dscatalog.exception.DatabaseException;
 import com.restful.dscatalog.exception.DuplicateEntryException;
+import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.CategoryService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -58,8 +59,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryDetailsDTO delete(Long id) {
         var entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
-        categoryRepository.delete(entity);
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+        try {
+            categoryRepository.delete(entity);
+        } catch (DataIntegrityViolationException e) {
+            throw new DatabaseException("Integrity violation");
+        }
         return new CategoryDetailsDTO(entity);
     }
 
