@@ -74,7 +74,8 @@ public class ProductController {
     ) {
         Product product = productService.create(dto);
         URI uri = uriComponentsBuilder.path("/api/v1/products/{id}")
-                .buildAndExpand(product.getId()).toUri();
+                .buildAndExpand(product.getId())
+                .toUri();
         return created(uri).body(new ProductDetailsDTO(product));
     }
 
@@ -93,7 +94,9 @@ public class ProductController {
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Product product = productService.createByCategoryNames(dto);
-        URI uri = uriComponentsBuilder.path("/api/v1/products/{id}").buildAndExpand(product.getId()).toUri();
+        URI uri = uriComponentsBuilder.path("/api/v1/products/{id}")
+                .buildAndExpand(product.getId())
+                .toUri();
         return created(uri).body(new ProductDetailsDTO(product));
     }
 
