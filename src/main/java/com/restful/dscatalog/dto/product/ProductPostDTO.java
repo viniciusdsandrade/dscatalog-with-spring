@@ -3,7 +3,7 @@ package com.restful.dscatalog.dto.product;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record ProductionPostDTO(
+public record ProductPostDTO(
         Long id,
         String name,
         String description,
@@ -13,7 +13,7 @@ public record ProductionPostDTO(
         List<Long> categoryIds
 ) {
 
-    public ProductionPostDTO {
+    public ProductPostDTO {
         categoryIds = (categoryIds == null) ? List.of() : List.copyOf(categoryIds);
     }
 }

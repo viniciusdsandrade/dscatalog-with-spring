@@ -1,8 +1,8 @@
 package com.restful.dscatalog.service.impl;
 
 import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
-import com.restful.dscatalog.dto.product.ProductionPostDTO;
-import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductPostDTO;
+import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
@@ -42,7 +42,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product create(@Valid ProductionPostDTO dto) {
+    public Product create(@Valid ProductPostDTO dto) {
         try {
             Product p = new Product();
             applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
@@ -56,7 +56,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product createByCategoryNames(@Valid ProductionPostByNameDTO dto) {
+    public Product createByCategoryNames(@Valid ProductPostByNameDTO dto) {
         try {
             Product p = new Product();
             applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(),
@@ -96,7 +96,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public @Valid ProductDetailsDTO update(Long id, @Valid ProductionPostDTO dto) {
+    public @Valid ProductDetailsDTO update(Long id, @Valid ProductPostDTO dto) {
         Product p = productRepository.getReferenceById(id);
 
         applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);

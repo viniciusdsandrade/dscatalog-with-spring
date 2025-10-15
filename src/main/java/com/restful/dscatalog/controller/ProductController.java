@@ -1,7 +1,7 @@
 package com.restful.dscatalog.controller;
 
-import com.restful.dscatalog.dto.product.ProductionPostDTO;
-import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductPostDTO;
+import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Product;
 import com.restful.dscatalog.service.ProductService;
@@ -69,7 +69,7 @@ public class ProductController {
             }
     )
     public ResponseEntity<ProductDetailsDTO> create(
-            @RequestBody @Valid ProductionPostDTO dto,
+            @RequestBody @Valid ProductPostDTO dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Product product = productService.create(dto);
@@ -89,7 +89,7 @@ public class ProductController {
             }
     )
     public ResponseEntity<ProductDetailsDTO> createByNames(
-            @RequestBody @Valid ProductionPostByNameDTO dto,
+            @RequestBody @Valid ProductPostByNameDTO dto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Product product = productService.createByCategoryNames(dto);
@@ -100,7 +100,7 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductDetailsDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid ProductionPostDTO dto
+            @RequestBody @Valid ProductPostDTO dto
     ) {
         ProductDetailsDTO updated = productService.update(id, dto);
         return ok(updated);

@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service;
 
-import com.restful.dscatalog.dto.product.ProductionPostDTO;
-import com.restful.dscatalog.dto.product.ProductionPostByNameDTO;
+import com.restful.dscatalog.dto.product.ProductPostDTO;
+import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Product;
 import jakarta.transaction.Transactional;
@@ -14,10 +14,10 @@ import java.util.List;
 public interface ProductService {
 
     @Transactional
-    Product create(@Valid ProductionPostDTO dto);
+    Product create(@Valid ProductPostDTO dto);
 
     @Transactional
-    Product createByCategoryNames(ProductionPostByNameDTO dto);
+    Product createByCategoryNames(ProductPostByNameDTO dto);
 
     Product findById(Long id);
 
@@ -27,7 +27,7 @@ public interface ProductService {
 
     @Transactional
     @Valid
-    ProductDetailsDTO update(Long id, @Valid ProductionPostDTO dto);
+    ProductDetailsDTO update(Long id, @Valid ProductPostDTO dto);
 
     @Transactional
     ProductDetailsDTO delete(Long id);
