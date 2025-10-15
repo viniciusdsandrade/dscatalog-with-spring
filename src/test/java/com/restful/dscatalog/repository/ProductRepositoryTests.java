@@ -29,10 +29,10 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 class ProductRepositoryTests {
 
     @Autowired
-    ProductRepository productRepository;
+    private ProductRepository productRepository;
 
     @Autowired
-    TestEntityManager testEntityManager;
+    private TestEntityManager testEntityManager;
 
     private PersistenceUnitUtil persistenceUnitUtil;
 

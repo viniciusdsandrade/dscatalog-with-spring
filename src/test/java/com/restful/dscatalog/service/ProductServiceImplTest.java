@@ -33,15 +33,16 @@ import static org.springframework.test.util.ReflectionTestUtils.setField;
 @ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {
 
-    @Mock ProductRepository productRepository;
-    @Mock CategoryRepository categoryRepository;
+    @Mock private ProductRepository productRepository;
+    @Mock private CategoryRepository categoryRepository;
 
-    @InjectMocks ProductServiceImpl service;
+    @InjectMocks private ProductServiceImpl service;
 
     private static <T> T withId(T entity, long id) {
         setField(entity, "id", id);
         return entity;
     }
+
     private static Product newProduct(String name, double price) {
         Product p = new Product();
         p.setName(name);
@@ -50,6 +51,7 @@ class ProductServiceImplTest {
         p.setDate(LocalDateTime.now());
         return p;
     }
+
     private static Category newCategory(String name) {
         Category c = new Category();
         c.setName(name);

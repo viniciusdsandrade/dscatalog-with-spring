@@ -19,37 +19,35 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = ANY)
-class CategoryRepositoryTests {
+class CategoryRepositoryTest {
 
     @Autowired
-    CategoryRepository repository;
+    private CategoryRepository categoryRepository;
 
     @Autowired
-    TestEntityManager em;
+    private TestEntityManager testEntityManager;
 
     @AfterEach
     void clear() {
-        em.clear();
+        testEntityManager.clear();
     }
 
     private Category cat(String name) {
         var c = new Category();
         c.setName(name);
-        return em.persistAndFlush(c);
+        return testEntityManager.persistAndFlush(c);
     }
-
 
     @Test
     @DisplayName("findByNameIgnoreCase: retorna presente (case-insensitive) quando existe")
     void findByNameIgnoreCase_returnsPresent_whenExists_caseInsensitive() {
         var saved = cat("Eletrônicos");
-        em.clear();
+        testEntityManager.clear();
 
-        Optional<Category> opt = repository.findByNameIgnoreCase("eLeTrÔnIcOs");
+        Optional<Category> opt = categoryRepository.findByNameIgnoreCase("eLeTrÔnIcOs");
 
         assertThat(opt).isPresent();
         assertThat(opt.get().getId()).isEqualTo(saved.getId());
-        // mantemos o casing salvo no banco
         assertThat(opt.get().getName()).isEqualTo("Eletrônicos");
     }
 
@@ -57,19 +55,18 @@ class CategoryRepositoryTests {
     @DisplayName("findByNameIgnoreCase: retorna vazio quando não existe")
     void findByNameIgnoreCase_returnsEmpty_whenNotExists() {
         cat("Informática");
-        em.clear();
+        testEntityManager.clear();
 
-        assertThat(repository.findByNameIgnoreCase("Livros")).isEmpty();
+        assertThat(categoryRepository.findByNameIgnoreCase("Livros")).isEmpty();
     }
-
-
+    
     @Test
     @DisplayName("findById: retorna Optional presente quando o id existe")
     void findById_returnsPresentOptional_whenIdExists() {
         var saved = cat("Games");
-        em.clear();
+        testEntityManager.clear();
 
-        var opt = repository.findById(saved.getId());
+        var opt = categoryRepository.findById(saved.getId());
 
         assertThat(opt).isPresent();
         assertThat(opt.get().getId()).isEqualTo(saved.getId());
@@ -81,15 +78,15 @@ class CategoryRepositoryTests {
     void findById_returnsEmptyOptional_whenIdDoesNotExist() {
         var saved = cat("Acessórios");
         long missing = saved.getId() + 10_000L;
-        em.clear();
+        testEntityManager.clear();
 
-        assertThat(repository.findById(missing)).isEmpty();
+        assertThat(categoryRepository.findById(missing)).isEmpty();
     }
 
     @Test
     @DisplayName("findById: traduz IllegalArgumentException para InvalidDataAccessApiUsageException quando id é null")
     void findById_throwsInvalidDataAccessApiUsageException_whenIdIsNull() {
-        var ex = assertThrows(InvalidDataAccessApiUsageException.class, () -> repository.findById(null));
+        var ex = assertThrows(InvalidDataAccessApiUsageException.class, () -> categoryRepository.findById(null));
         assertThat(ex.getMostSpecificCause())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must not be null");
@@ -102,6 +99,6 @@ class CategoryRepositoryTests {
         var dup = new Category();
         dup.setName("Únicos");
 
-        assertThrows(ConstraintViolationException.class, () -> em.persistAndFlush(dup));
+        assertThrows(ConstraintViolationException.class, () -> testEntityManager.persistAndFlush(dup));
     }
 }

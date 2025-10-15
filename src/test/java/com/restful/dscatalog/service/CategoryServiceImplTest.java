@@ -31,14 +31,15 @@ import static org.springframework.test.util.ReflectionTestUtils.setField;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceImplTest {
 
-    @Mock CategoryRepository categoryRepository;
-    @InjectMocks CategoryServiceImpl service;
+    @Mock private CategoryRepository categoryRepository;
+    @InjectMocks private CategoryServiceImpl service;
 
     private static Category newCategory(String name) {
         Category c = new Category();
         c.setName(name);
         return c;
     }
+
     private static Category withId(Category c, long id) {
         setField(c, "id", id);
         return c;
@@ -109,7 +110,7 @@ class CategoryServiceImplTest {
         CategoryDetailsDTO out = service.update(3L, dto);
 
         assertThat(out.id()).isEqualTo(3L);
-        assertThat(out.name()).isEqualTo("Novo"); // trim aplicado no service
+        assertThat(out.name()).isEqualTo("Novo");
         assertThat(managed.getName()).isEqualTo("Novo");
         verify(categoryRepository).save(managed);
     }
