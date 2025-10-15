@@ -115,13 +115,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDetailsDTO delete(Long id) {
         var entity = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Id not found " + id));
+        var dto = new ProductDetailsDTO(entity);
         try {
             productRepository.delete(entity);
             productRepository.flush();
-            return new ProductDetailsDTO(entity);
+            return dto;
         } catch (DataIntegrityViolationException e) {
-            throw new DatabaseException("Violação de integridade referencial");
+            throw new DatabaseException("Integrity violation");
         }
     }
 

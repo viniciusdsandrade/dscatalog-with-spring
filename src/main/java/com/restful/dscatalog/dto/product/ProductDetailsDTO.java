@@ -1,5 +1,6 @@
 package com.restful.dscatalog.dto.product;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.entity.Product;
 
@@ -16,6 +17,7 @@ public record ProductDetailsDTO(
         BigDecimal price,
         String imgUrl,
         LocalDateTime date,
+        @JsonProperty("categories")
         Set<String> categoryNames
 ) {
     public ProductDetailsDTO(Product p) {
