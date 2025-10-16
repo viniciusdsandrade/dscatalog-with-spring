@@ -1,3 +1,133 @@
+-- =========================
+-- (OPCIONAL) GARANTIR ROLES
+-- =========================
+INSERT INTO tb_role (authority)
+SELECT 'ROLE_ADMIN'  FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_ADMIN');
+
+INSERT INTO tb_role (authority)
+SELECT 'ROLE_CLIENT' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_CLIENT');
+
+-- =========================
+-- NOVOS USERS (senha: 123456)
+-- =========================
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Bob', 'Stone', 'bob@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'bob@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Ana', 'White', 'ana@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'ana@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'John', 'Doe', 'john@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'john@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Beatriz', 'Lima', 'bia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'bia@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Carlos', 'Silva', 'carlos@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'carlos@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Julia', 'Costa', 'julia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'julia@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Rafael', 'Souza', 'rafa@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'rafa@dscatalog.com');
+
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Patricia', 'Gomes', 'patricia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'patricia@dscatalog.com');
+
+-- =========================
+-- USER_ROLES
+-- =========================
+-- Admin existente também recebe ROLE_CLIENT (duas roles)
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'admin@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Bob -> CLIENT
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'bob@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Ana -> ADMIN + CLIENT (duas roles)
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
+WHERE u.email = 'ana@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'ana@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- John -> ADMIN + CLIENT (duas roles)
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
+WHERE u.email = 'john@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'john@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Beatriz -> CLIENT
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'bia@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Carlos -> ADMIN
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
+WHERE u.email = 'carlos@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Julia -> CLIENT
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'julia@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Rafael -> CLIENT
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'rafa@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+-- Patricia -> ADMIN + CLIENT (duas roles)
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
+WHERE u.email = 'patricia@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'patricia@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
 SET @now = NOW(6);
 
 INSERT INTO tb_category (name, created_at, updated_at)
