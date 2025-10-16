@@ -13,11 +13,11 @@ import java.util.Objects;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @ToString
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity(name = "Category")
 @Table(
         name = "tb_category",

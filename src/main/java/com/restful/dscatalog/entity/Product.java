@@ -17,12 +17,12 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 import static org.hibernate.annotations.FetchMode.SUBSELECT;
 
-@ToString
-@Setter
-@Getter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
+@Getter
+@Setter
+@Entity
 @Table(name = "tb_product")
 public class Product {
 
