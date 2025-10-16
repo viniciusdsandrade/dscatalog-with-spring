@@ -1,17 +1,30 @@
 package com.restful.dscatalog.dto.user;
 
-public class UserInsertDTO extends UserDTO {
-    private String password;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-    public UserInsertDTO() {
-        super();
-    }
+import static com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY;
 
-    public String getPassword() {
-        return password;
-    }
+public record UserInsertDTO(
+        @NotBlank(message = "First name is required")
+        @Size(min = 2, max = 60, message = "First name must be between 2 and 60 characters")
+        String firstName,
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+        @NotBlank(message = "Last name is required")
+        @Size(min = 2, max = 60, message = "Last name must be between 2 and 60 characters")
+        String lastName,
+
+        @NotBlank(message = "Email is required")
+        @Email(message = "Email must be valid")
+        @Size(max = 120, message = "Email must be at most 120 characters")
+        String email,
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, max = 60, message = "Password must be between 6 and 60 characters")
+        @JsonProperty(access = WRITE_ONLY)
+        String password
+) {
 }
+
