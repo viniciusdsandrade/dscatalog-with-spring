@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 
@@ -30,10 +30,12 @@ public class User {
     private String email;
     private String password;
 
-    @ManyToMany(fetch = LAZY)
-    @JoinTable(name = "tb_user_role",
+    @ManyToMany(fetch = EAGER)
+    @JoinTable(
+            name = "tb_user_role",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
     @Setter(NONE)
     private Set<Role> roles = new HashSet<>();
 
