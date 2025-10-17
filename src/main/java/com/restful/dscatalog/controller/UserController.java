@@ -12,8 +12,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 
-import static org.springframework.http.ResponseEntity.ok;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.created;
+import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -37,15 +38,16 @@ public class UserController {
         return ok(user);
     }
 
-    @PostMapping
-    public ResponseEntity<UserDTO> createUser(
+    @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> createUser(
             @RequestBody @Valid UserInsertDTO userInsertDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         UserDTO createdUser = userService.insert(userInsertDTO);
-        URI uri = uriComponentsBuilder.path("/api/v1/users/{id}")
+        URI uri = uriComponentsBuilder
+                .path("/api/v1/users/{id}")
                 .buildAndExpand(createdUser.getId())
                 .toUri();
-        return created(uri).body(createdUser);
+        return created(uri).build();
     }
 }
