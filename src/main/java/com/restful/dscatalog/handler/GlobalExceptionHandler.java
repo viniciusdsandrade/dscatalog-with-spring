@@ -4,6 +4,7 @@ import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
 import org.hibernate.TypeMismatchException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.web.util.HtmlUtils.htmlEscape;
 
 @RestControllerAdvice(basePackages = "com.restful.dscatalog.controller")
 public class GlobalExceptionHandler {
@@ -31,8 +33,8 @@ public class GlobalExceptionHandler {
     ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
-                exception.getMessage(),
-                webRequest.getDescription(false),
+                htmlEscape(exception.getMessage()),
+                htmlEscape(webRequest.getDescription(false)),
                 "RESOURCE_NOT_FOUND"
         );
 
@@ -41,7 +43,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception) {
-        var errors = exception.getFieldErrors();
+        List<FieldError> errors = exception.getFieldErrors();
 
         List<ErrorDetails> errorDetailsList = errors.stream()
                 .map(ErrorDetails::new)
@@ -54,26 +56,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<List<ErrorDetails>> handleTypeMismatch(WebRequest webRequest) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
-                "Parâmetro inválido: tipo incorreto ou não numérico.",
-                webRequest.getDescription(false),
+                htmlEscape("Parâmetro inválido: tipo incorreto ou não numérico."),
+                htmlEscape(webRequest.getDescription(false)),
                 "TYPE_MISMATCH"
         );
-
         return new ResponseEntity<>(List.of(errorDetails), BAD_REQUEST);
     }
 
     @ExceptionHandler(DuplicateEntryException.class)
     public ResponseEntity<List<ErrorDetails>> handleDuplicateEntryException(
-            DuplicateEntryException exception,
+            DuplicateEntryException ex,
             WebRequest webRequest
     ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
-                exception.getMessage(),
-                webRequest.getDescription(false),
+                htmlEscape(ex.getMessage()),
+                htmlEscape(webRequest.getDescription(false)),
                 "DUPLICATE_ENTRY"
         );
-
         return ResponseEntity.status(CONFLICT).body(List.of(errorDetails));
     }
 
@@ -84,8 +84,8 @@ public class GlobalExceptionHandler {
     ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
-                exception.getMessage(),
-                webRequest.getDescription(false),
+                htmlEscape(exception.getMessage()),
+                htmlEscape(webRequest.getDescription(false)),
                 "INTERNAL_SERVER_ERROR"
         );
         return new ResponseEntity<>(errorDetails, INTERNAL_SERVER_ERROR);
@@ -98,8 +98,8 @@ public class GlobalExceptionHandler {
     ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
-                exception.getMessage(),
-                webRequest.getDescription(false),
+                htmlEscape(exception.getMessage()),
+                htmlEscape(webRequest.getDescription(false)),
                 "VALIDATION_ERROR"
         );
 
