@@ -3,9 +3,11 @@ package com.restful.dscatalog.service.impl;
 import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
 import com.restful.dscatalog.dto.user.UserUpdateDTO;
+import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.entity.User;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
+import com.restful.dscatalog.projections.UserDetailsProjection;
 import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
 import com.restful.dscatalog.service.UserService;
@@ -14,26 +16,46 @@ import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private static final Long ROLE_CLIENT_ID = 2L;
 
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final PasswordEncoder bCryptPasswordEncoder;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
 
     public UserServiceImpl(
-            BCryptPasswordEncoder bcryptpasswordencoder,
+            PasswordEncoder bcryptpasswordencoder,
             UserRepository userRepository,
             RoleRepository roleRepository
     ) {
         this.bCryptPasswordEncoder = bcryptpasswordencoder;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        List<UserDetailsProjection> results = userRepository.searchUserAndRolesByEmail(username);
+        if (results.isEmpty()) {
+            throw new UsernameNotFoundException("Email not found: " + username);
+        }
+        User user = new User();
+        user.setEmail(results.get(0).getUsername());
+        user.setPassword(results.get(0).getPassword());
+        results.forEach(projection -> user.addRole(
+            new Role(projection.getRoleId(), projection.getAuthority())
+        ));
+        return user;
     }
 
     @Override
@@ -98,5 +120,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(entity);
         return new UserDTO(entity);
     }
+
+
 }
 

@@ -39,3 +39,11 @@ FROM tb_user u
 GROUP BY u.id, u.first_name, u.last_name, u.email
 ORDER BY u.first_name, u.last_name;
 /*----------------------------------------------------------------------------------------------------*/
+SELECT u.email     AS username,
+       u.password  AS password,
+       r.id        AS roleId,
+       r.authority AS authority
+FROM tb_user u
+         JOIN tb_user_role ur ON u.id = ur.user_id
+         JOIN tb_role r       ON r.id = ur.role_id
+WHERE u.email = :email
