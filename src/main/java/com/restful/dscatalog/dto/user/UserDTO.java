@@ -7,8 +7,6 @@ import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.springframework.web.util.HtmlUtils.htmlEscape;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -23,11 +21,10 @@ public class UserDTO {
     private Set<RoleDTO> roles = new HashSet<>();
 
     public UserDTO(User user) {
-        super();
         this.id = user.getId();
-        this.firstName = htmlEscape(user.getFirstName());
-        this.lastName = htmlEscape(user.getLastName());
-        this.email = htmlEscape(user.getEmail());
+        this.firstName = user.getFirstName();
+        this.lastName  = user.getLastName();
+        this.email     = user.getEmail();
         user.getRoles().forEach(role -> this.roles.add(new RoleDTO(role)));
     }
 }

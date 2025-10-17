@@ -2,6 +2,7 @@ package com.restful.dscatalog.service.impl;
 
 import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
+import com.restful.dscatalog.dto.user.UserUpdateDTO;
 import com.restful.dscatalog.entity.User;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
@@ -9,6 +10,7 @@ import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
 import com.restful.dscatalog.service.UserService;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,35 +43,60 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDTO findById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return new UserDTO(user);
+    }
+
+    @Override
     @Transactional
-    public UserDTO insert(UserInsertDTO dto) {
-        if (userRepository.findByEmail(dto.email()).isPresent())
-            throw new DuplicateEntryException("Email already exists: " + dto.email());
+    public UserDTO insert(@Valid UserInsertDTO dto) {
+        final String normalizedEmail = dto.email().trim().toLowerCase();
+
+        if (userRepository.findByEmail(normalizedEmail).isPresent())
+            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
 
         try {
             User entity = new User();
-            copyDtoToEntity(dto, entity);
-            entity.setPassword(bCryptPasswordEncoder.encode(dto.password()));
+            entity.initializeProfile(
+                    dto.firstName(),
+                    dto.lastName(),
+                    normalizedEmail,
+                    bCryptPasswordEncoder.encode(dto.password())
+            );
+
+            entity.getRoles().clear();
+            entity.getRoles().add(roleRepository.getReferenceById(ROLE_CLIENT_ID));
+
             userRepository.saveAndFlush(entity);
             return new UserDTO(entity);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicateEntryException("Email already exists: " + dto.email());
+            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
         }
     }
 
     @Override
-    public UserDTO findById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return new UserDTO(user);
-    }
+    @Transactional
+    public UserDTO update(Long id, UserUpdateDTO dto) {
+        User entity = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-    private void copyDtoToEntity(UserInsertDTO dto, User entity) {
-        entity.setFirstName(dto.firstName());
-        entity.setLastName(dto.lastName());
-        entity.setEmail(dto.email());
+        String normalizedEmail = dto.email().trim().toLowerCase();
 
-        entity.getRoles().clear();
-        entity.getRoles().add(roleRepository.getReferenceById(ROLE_CLIENT_ID));
+        if (normalizedEmail.equalsIgnoreCase(entity.getEmail()))
+            throw new DuplicateEntryException("New email must be different from current");
+
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, id))
+            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
+
+        entity.updateProfile(
+                dto.firstName(),
+                dto.lastName(),
+                normalizedEmail
+        );
+        userRepository.save(entity);
+        return new UserDTO(entity);
     }
 }
 

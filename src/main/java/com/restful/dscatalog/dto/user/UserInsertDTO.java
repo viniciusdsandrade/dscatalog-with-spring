@@ -1,6 +1,7 @@
 package com.restful.dscatalog.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.restful.dscatalog.validation.annotation.StrongPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -27,6 +28,7 @@ public record UserInsertDTO(
         @NotBlank(message = "Password is required")
         @Size(min = 6, max = 60, message = "Password must be between 6 and 60 characters")
         @JsonProperty(access = WRITE_ONLY)
+        @StrongPassword()
         String password
 ) {
 }

@@ -2,6 +2,7 @@ package com.restful.dscatalog.controller;
 
 import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
+import com.restful.dscatalog.dto.user.UserUpdateDTO;
 import com.restful.dscatalog.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -40,7 +41,7 @@ public class UserController {
 
     @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> createUser(
-            @RequestBody @Valid UserInsertDTO userInsertDTO,
+            @Valid @RequestBody UserInsertDTO userInsertDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
         UserDTO createdUser = userService.insert(userInsertDTO);
@@ -49,5 +50,14 @@ public class UserController {
                 .buildAndExpand(createdUser.getId())
                 .toUri();
         return created(uri).build();
+    }
+
+    @PutMapping(value = "/{id}", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserDTO> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UserUpdateDTO userInsertDTO
+    ) {
+        UserDTO updatedUser = userService.update(id, userInsertDTO);
+        return ok(updatedUser);
     }
 }
