@@ -24,17 +24,11 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestControllerAdvice(basePackages = "com.restful.dscatalog.controller")
 public class GlobalExceptionHandler {
 
-    /**
-     * Manipula a exceção de entidade não encontrada.
-     *
-     * @param exception  A exceção de entidade não encontrada.
-     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
-     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 404 (Not Found).
-     */
     @ExceptionHandler({EntityNotFoundException.class, ResourceNotFoundException.class})
-    public ResponseEntity<List<ErrorDetails>> handleResourceNotFoundException(Exception exception,
-                                                                              WebRequest webRequest) {
-
+    public ResponseEntity<List<ErrorDetails>> handleResourceNotFoundException(
+            Exception exception,
+            WebRequest webRequest
+    ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 exception.getMessage(),
@@ -45,16 +39,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(List.of(errorDetails), NOT_FOUND);
     }
 
-    /**
-     * Manipula a exceção de violação de integridade dos dados.
-     *
-     * @param exception  A exceção de violação de integridade dos dados.
-     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
-     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 400 (Bad Request).
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception,
-                                                                                    WebRequest webRequest) {
+    public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception) {
         var errors = exception.getFieldErrors();
 
         List<ErrorDetails> errorDetailsList = errors.stream()
@@ -64,17 +50,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetailsList, BAD_REQUEST);
     }
 
-    /**
-     * Manipula path/query params com tipo inválido (ex.: /users/abc para @PathVariable Long id).
-     *
-     * @param exception  A exceção de incompatibilidade de tipo.
-     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
-     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 400 (Bad Request).
-     */
-    @ExceptionHandler({ MethodArgumentTypeMismatchException.class, TypeMismatchException.class, NumberFormatException.class })
-    public ResponseEntity<List<ErrorDetails>> handleTypeMismatch(Exception exception,
-                                                                 WebRequest webRequest) {
-
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, TypeMismatchException.class, NumberFormatException.class})
+    public ResponseEntity<List<ErrorDetails>> handleTypeMismatch(WebRequest webRequest) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 "Parâmetro inválido: tipo incorreto ou não numérico.",
@@ -85,16 +62,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(List.of(errorDetails), BAD_REQUEST);
     }
 
-    /**
-     * Manipula a exceção de entrada duplicada.
-     *
-     * @param exception  A exceção de entrada duplicada.
-     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
-     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 409 (Conflict).
-     */
     @ExceptionHandler(DuplicateEntryException.class)
-    public ResponseEntity<List<ErrorDetails>> handleDuplicateEntryException(DuplicateEntryException exception,
-                                                                            WebRequest webRequest) {
+    public ResponseEntity<List<ErrorDetails>> handleDuplicateEntryException(
+            DuplicateEntryException exception,
+            WebRequest webRequest
+    ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 exception.getMessage(),
@@ -105,17 +77,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(CONFLICT).body(List.of(errorDetails));
     }
 
-    /**
-     * Manipula exceções globais não especificadas.
-     *
-     * @param exception  A exceção global.
-     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
-     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 500 (Internal Server Error).
-     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorDetails> handleGlobalException(Exception exception,
-                                                              WebRequest webRequest) {
-
+    public ResponseEntity<ErrorDetails> handleGlobalException(
+            Exception exception,
+            WebRequest webRequest
+    ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 exception.getMessage(),
@@ -126,9 +92,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<List<ErrorDetails>> handleValidacaoException(ValidationException exception,
-                                                                       WebRequest webRequest) {
-
+    public ResponseEntity<List<ErrorDetails>> handleValidacaoException(
+            ValidationException exception,
+            WebRequest webRequest
+    ) {
         ErrorDetails errorDetails = new ErrorDetails(
                 now(),
                 exception.getMessage(),
