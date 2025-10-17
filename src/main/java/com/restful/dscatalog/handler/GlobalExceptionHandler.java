@@ -3,12 +3,14 @@ package com.restful.dscatalog.handler;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
+import org.hibernate.TypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -60,6 +62,27 @@ public class GlobalExceptionHandler {
                 .collect(toList());
 
         return new ResponseEntity<>(errorDetailsList, BAD_REQUEST);
+    }
+
+    /**
+     * Manipula path/query params com tipo inválido (ex.: /users/abc para @PathVariable Long id).
+     *
+     * @param exception  A exceção de incompatibilidade de tipo.
+     * @param webRequest O objeto WebRequest que fornece informações sobre a solicitação.
+     * @return Uma ResponseEntity contendo detalhes do erro e status HTTP 400 (Bad Request).
+     */
+    @ExceptionHandler({ MethodArgumentTypeMismatchException.class, TypeMismatchException.class, NumberFormatException.class })
+    public ResponseEntity<List<ErrorDetails>> handleTypeMismatch(Exception exception,
+                                                                 WebRequest webRequest) {
+
+        ErrorDetails errorDetails = new ErrorDetails(
+                now(),
+                "Parâmetro inválido: tipo incorreto ou não numérico.",
+                webRequest.getDescription(false),
+                "TYPE_MISMATCH"
+        );
+
+        return new ResponseEntity<>(List.of(errorDetails), BAD_REQUEST);
     }
 
     /**

@@ -4,6 +4,7 @@ import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
 import com.restful.dscatalog.entity.User;
 import com.restful.dscatalog.exception.DuplicateEntryException;
+import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
 import com.restful.dscatalog.service.UserService;
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDTO findById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return new UserDTO(user);
     }
 
