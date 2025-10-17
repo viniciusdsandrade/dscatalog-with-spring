@@ -66,7 +66,10 @@ public class CategoryController {
             UriComponentsBuilder uriComponentsBuilder
     ) {
         Category category = categoryService.create(dto);
-        URI uri = uriComponentsBuilder.path("/api/v1/categories/{id}").buildAndExpand(category.getId()).toUri();
+        URI uri = uriComponentsBuilder
+                .path("/api/v1/categories/{id}")
+                .buildAndExpand(category.getId())
+                .toUri();
         return created(uri).body(new CategoryDetailsDTO(category));
     }
 
