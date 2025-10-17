@@ -18,7 +18,6 @@ public interface CategoryService {
     Page<CategoryDetailsDTO> listAll(Pageable paginacao);
 
     @Transactional
-    @Valid
     CategoryDetailsDTO update(Long id, @Valid CategoryPostDTO dto);
 
     @Transactional
