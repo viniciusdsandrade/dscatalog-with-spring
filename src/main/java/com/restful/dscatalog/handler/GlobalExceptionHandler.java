@@ -45,7 +45,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception) {
         List<FieldError> errors = exception.getFieldErrors();
 
-        List<ErrorDetails> errorDetailsList = errors.stream()
+        List<ErrorDetails> errorDetailsList = errors
+                .stream()
                 .map(ErrorDetails::new)
                 .collect(toList());
 
