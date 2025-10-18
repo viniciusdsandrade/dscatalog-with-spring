@@ -7,6 +7,7 @@ import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.entity.User;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
+import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.projections.UserDetailsProjection;
 import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
@@ -18,14 +19,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static java.util.Locale.ROOT;
 
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
@@ -49,9 +54,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         List<UserDetailsProjection> results = userRepository.searchUserAndRolesByEmail(username);
-        if (results.isEmpty()) {
+        if (results.isEmpty())
             throw new UsernameNotFoundException("Email not found: " + username);
-        }
         User user = new User();
         user.setEmail(results.get(0).getUsername());
         user.setPassword(results.get(0).getPassword());
@@ -103,46 +107,57 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public UserDTO update(Long id, UserUpdateDTO dto) {
-        User entity = userRepository.findById(id)
+    public UserDTO update(final Long id, final UserUpdateDTO dto) {
+        final User entity = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // --- autenticação obrigatória ---
-        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException("No authentication");
-        }
+        final Authentication auth = requireAuthenticated();
+        final String requester = resolveRequesterIdentity(auth);
 
-        // --- extrai identidade do token (preferindo claim 'username'; fallback: 'sub') ---
-        String requesterIdentity;
-        if (auth instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken jwtAuth) {
-            Object emailClaim = jwtAuth.getTokenAttributes().get("username"); // você já injeta esse claim no token
-            requesterIdentity = (emailClaim != null) ? emailClaim.toString() : jwtAuth.getName(); // getName() == 'sub'
-        } else {
-            requesterIdentity = auth.getName(); // fallback
-        }
+        assertOwner(entity, requester);
 
-        // --- valida "owner": só o dono pode atualizar seu próprio cadastro ---
-        boolean isOwner = entity.getEmail() != null
-                && requesterIdentity != null
-                && entity.getEmail().equalsIgnoreCase(requesterIdentity);
-        if (!isOwner) {
-            throw new org.springframework.security.access.AccessDeniedException("You are not allowed to update this user");
-        }
+        final String normalizedEmail = normalizeEmail(dto.email());
 
-        // --- validações de negócio existentes ---
-        String normalizedEmail = dto.email().trim().toLowerCase();
-
-        if (normalizedEmail.equalsIgnoreCase(entity.getEmail())) {
-            throw new DuplicateEntryException("New email must be different from current");
-        }
-        if (userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, id)) {
-            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
-        }
+        validateEmailChange(entity, normalizedEmail, id);
 
         entity.updateProfile(dto.firstName(), dto.lastName(), normalizedEmail);
         userRepository.save(entity);
+
         return new UserDTO(entity);
     }
 
+    private Authentication requireAuthenticated() {
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            throw new AuthenticationCredentialsNotFoundException("No authentication");
+        return auth;
+    }
+
+    private String resolveRequesterIdentity(Authentication auth) {
+        if (auth instanceof JwtAuthenticationToken jwt) {
+            Object username = jwt.getTokenAttributes().get("username");
+            return (username != null) ? username.toString() : jwt.getName();
+        }
+        return auth.getName();
+    }
+
+    private void assertOwner(User entity, String requesterIdentity) {
+        String ownerEmail = entity.getEmail();
+        boolean isOwner = ownerEmail != null
+                && ownerEmail.equalsIgnoreCase(requesterIdentity);
+
+        if (!isOwner) throw new AccessDeniedException("You are not allowed to update this user");
+    }
+
+    private String normalizeEmail(String raw) {
+        if (raw == null) throw new ValidationException("Email must not be null");
+        return raw.trim().toLowerCase(ROOT);
+    }
+
+    private void validateEmailChange(User entity, String newEmail, Long id) {
+        if (entity.getEmail() != null && entity.getEmail().equalsIgnoreCase(newEmail))
+            throw new DuplicateEntryException("New email must be different from current");
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(newEmail, id))
+            throw new DuplicateEntryException("Email already exists: " + newEmail);
+    }
 }
