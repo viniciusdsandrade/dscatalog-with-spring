@@ -1,7 +1,6 @@
 package com.restful.dscatalog.config.customgrant;
 
 import java.security.Principal;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
