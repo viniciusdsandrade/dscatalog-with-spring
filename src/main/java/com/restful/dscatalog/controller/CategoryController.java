@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -61,6 +62,7 @@ public class CategoryController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryDetailsDTO> create(
             @RequestBody @Valid CategoryPostDTO dto,
             UriComponentsBuilder uriComponentsBuilder
@@ -83,6 +85,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryDetailsDTO> delete(@PathVariable Long id) {
         var dto = categoryService.delete(id);
         return ok(dto);

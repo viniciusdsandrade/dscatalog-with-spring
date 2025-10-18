@@ -16,6 +16,9 @@ import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -53,7 +56,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEmail(results.get(0).getUsername());
         user.setPassword(results.get(0).getPassword());
         results.forEach(projection -> user.addRole(
-            new Role(projection.getRoleId(), projection.getAuthority())
+                new Role(projection.getRoleId(), projection.getAuthority())
         ));
         return user;
     }
@@ -104,23 +107,42 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         User entity = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        // --- autenticação obrigatória ---
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException("No authentication");
+        }
+
+        // --- extrai identidade do token (preferindo claim 'username'; fallback: 'sub') ---
+        String requesterIdentity;
+        if (auth instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken jwtAuth) {
+            Object emailClaim = jwtAuth.getTokenAttributes().get("username"); // você já injeta esse claim no token
+            requesterIdentity = (emailClaim != null) ? emailClaim.toString() : jwtAuth.getName(); // getName() == 'sub'
+        } else {
+            requesterIdentity = auth.getName(); // fallback
+        }
+
+        // --- valida "owner": só o dono pode atualizar seu próprio cadastro ---
+        boolean isOwner = entity.getEmail() != null
+                && requesterIdentity != null
+                && entity.getEmail().equalsIgnoreCase(requesterIdentity);
+        if (!isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not allowed to update this user");
+        }
+
+        // --- validações de negócio existentes ---
         String normalizedEmail = dto.email().trim().toLowerCase();
 
-        if (normalizedEmail.equalsIgnoreCase(entity.getEmail()))
+        if (normalizedEmail.equalsIgnoreCase(entity.getEmail())) {
             throw new DuplicateEntryException("New email must be different from current");
-
-        if (userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, id))
+        }
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, id)) {
             throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
+        }
 
-        entity.updateProfile(
-                dto.firstName(),
-                dto.lastName(),
-                normalizedEmail
-        );
+        entity.updateProfile(dto.firstName(), dto.lastName(), normalizedEmail);
         userRepository.save(entity);
         return new UserDTO(entity);
     }
 
-
 }
-

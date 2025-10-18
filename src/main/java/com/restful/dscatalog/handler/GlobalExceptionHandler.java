@@ -13,6 +13,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.jwt.JwtException;
+
 import java.util.List;
 
 import static java.time.LocalDateTime.now;
@@ -21,6 +27,8 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.web.util.HtmlUtils.htmlEscape;
 
 @RestControllerAdvice(basePackages = "com.restful.dscatalog.controller")
@@ -37,19 +45,16 @@ public class GlobalExceptionHandler {
                 htmlEscape(webRequest.getDescription(false)),
                 "RESOURCE_NOT_FOUND"
         );
-
         return new ResponseEntity<>(List.of(errorDetails), NOT_FOUND);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<List<ErrorDetails>> handleDataIntegrityViolationException(MethodArgumentNotValidException exception) {
         List<FieldError> errors = exception.getFieldErrors();
-
         List<ErrorDetails> errorDetailsList = errors
                 .stream()
                 .map(ErrorDetails::new)
                 .collect(toList());
-
         return new ResponseEntity<>(errorDetailsList, BAD_REQUEST);
     }
 
@@ -78,6 +83,82 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(CONFLICT).body(List.of(errorDetails));
     }
 
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<List<ErrorDetails>> handleBadCredentials(WebRequest webRequest) {
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                htmlEscape("Credenciais inválidas."),
+                htmlEscape(webRequest.getDescription(false)),
+                "BAD_CREDENTIALS"
+        );
+        return new ResponseEntity<>(List.of(err), UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<List<ErrorDetails>> handleAuthCredentialsNotFound(WebRequest webRequest) {
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                htmlEscape("Credenciais ausentes ou inválidas."),
+                htmlEscape(webRequest.getDescription(false)),
+                "AUTH_CREDENTIALS_NOT_FOUND"
+        );
+        return new ResponseEntity<>(List.of(err), UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<List<ErrorDetails>> handleAuthenticationException(WebRequest webRequest) {
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                htmlEscape("Não autenticado: forneça credenciais válidas."),
+                htmlEscape(webRequest.getDescription(false)),
+                "UNAUTHORIZED"
+        );
+        return new ResponseEntity<>(List.of(err), UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(OAuth2AuthenticationException.class)
+    public ResponseEntity<List<ErrorDetails>> handleOAuth2AuthenticationException(
+            OAuth2AuthenticationException ex,
+            WebRequest webRequest
+    ) {
+        String message = (ex.getError() != null && ex.getError().getDescription() != null)
+                ? ex.getError().getDescription()
+                : "Falha de autenticação OAuth2.";
+        String code = (ex.getError() != null && ex.getError().getErrorCode() != null)
+                ? ex.getError().getErrorCode().toUpperCase()
+                : "OAUTH2_AUTHENTICATION_ERROR";
+
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                htmlEscape(message),
+                htmlEscape(webRequest.getDescription(false)),
+                htmlEscape(code)
+        );
+        return new ResponseEntity<>(List.of(err), UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<List<ErrorDetails>> handleJwtException(WebRequest webRequest) {
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                htmlEscape("Token inválido ou expirado."),
+                htmlEscape(webRequest.getDescription(false)),
+                "INVALID_TOKEN"
+        );
+        return new ResponseEntity<>(List.of(err), UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleAccessDenied(WebRequest webRequest) {
+        ErrorDetails err = new ErrorDetails(
+                now(),
+                "Acesso negado: permissão insuficiente.",
+                pathOf(webRequest),
+                "ACCESS_DENIED"
+        );
+        return ResponseEntity.status(FORBIDDEN).body(err);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGlobalException(
             Exception exception,
@@ -103,7 +184,13 @@ public class GlobalExceptionHandler {
                 htmlEscape(webRequest.getDescription(false)),
                 "VALIDATION_ERROR"
         );
-
         return new ResponseEntity<>(List.of(errorDetails), BAD_REQUEST);
+    }
+
+    private static String pathOf(WebRequest req) {
+        String d = req.getDescription(false);
+        if (d == null) return null;
+        int i = d.indexOf("uri=");
+        return (i >= 0 ? d.substring(i + 4) : d);
     }
 }

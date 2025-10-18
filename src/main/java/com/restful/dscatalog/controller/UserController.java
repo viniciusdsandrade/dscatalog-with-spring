@@ -4,6 +4,7 @@ import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
 import com.restful.dscatalog.dto.user.UserUpdateDTO;
 import com.restful.dscatalog.service.UserService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,19 +29,22 @@ public class UserController {
     }
 
     @GetMapping
+    @PermitAll
     public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable) {
         Page<UserDTO> users = userService.findAllPaged(pageable);
         return ok(users);
     }
 
     @GetMapping(value = "/{id}")
+    @PermitAll
     public ResponseEntity<UserDTO> findById(@PathVariable Long id) {
         UserDTO user = userService.findById(id);
         return ok(user);
     }
 
     @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> createUser(
+    @PermitAll
+    public ResponseEntity<UserDTO> createUser(
             @Valid @RequestBody UserInsertDTO userInsertDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
@@ -49,10 +53,11 @@ public class UserController {
                 .path("/api/v1/users/{id}")
                 .buildAndExpand(createdUser.getId())
                 .toUri();
-        return created(uri).build();
+        return created(uri).body(createdUser);
     }
 
     @PutMapping(value = "/{id}", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @PermitAll
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserUpdateDTO userInsertDTO

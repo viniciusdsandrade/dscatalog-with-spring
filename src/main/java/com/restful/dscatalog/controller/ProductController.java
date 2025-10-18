@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -68,6 +69,7 @@ public class ProductController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> create(
             @RequestBody @Valid ProductPostDTO dto,
             UriComponentsBuilder uriComponentsBuilder
@@ -90,6 +92,7 @@ public class ProductController {
                     @ApiResponse(responseCode = "400", description = "Erro de validação")
             }
     )
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> createByNames(
             @RequestBody @Valid ProductPostByNameDTO dto,
             UriComponentsBuilder uriComponentsBuilder
@@ -103,6 +106,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> update(
             @PathVariable Long id,
             @RequestBody @Valid ProductPostDTO dto
@@ -112,6 +116,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> delete(@PathVariable Long id) {
         ProductDetailsDTO dto = productService.delete(id);
         return ok(dto);

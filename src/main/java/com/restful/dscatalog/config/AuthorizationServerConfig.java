@@ -134,7 +134,7 @@ public class AuthorizationServerConfig {
     @Bean
     AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:8080") // ajuste ao teu host/porta
+                .issuer("http://localhost:8080")
                 .build();
     }
 
