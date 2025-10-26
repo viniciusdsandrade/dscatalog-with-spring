@@ -1,10 +1,3 @@
--- ============================================
--- PostgreSQL: Dados idempotentes / sem DUAL
--- ============================================
-
--- =========================
--- (OPCIONAL) GARANTIR ROLES
--- =========================
 INSERT INTO tb_role (authority)
 SELECT 'ROLE_ADMIN'
 WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_ADMIN');
@@ -13,9 +6,6 @@ INSERT INTO tb_role (authority)
 SELECT 'ROLE_CLIENT'
 WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_CLIENT');
 
--- =========================
--- NOVOS USERS (senha: 123456)
--- =========================
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Bob', 'Stone', 'bob@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'bob@dscatalog.com');
@@ -48,19 +38,15 @@ INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Patricia', 'Gomes', 'patricia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'patricia@dscatalog.com');
 
--- =========================
--- USER_ROLES
--- =========================
--- Admin existente também recebe ROLE_CLIENT (duas roles)
 INSERT INTO tb_user_role (user_id, role_id)
 SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'admin@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Bob -> CLIENT
 INSERT INTO tb_user_role (user_id, role_id)
@@ -68,10 +54,10 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'bob@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Ana -> ADMIN + CLIENT (duas roles)
 INSERT INTO tb_user_role (user_id, role_id)
@@ -79,20 +65,20 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
 WHERE u.email = 'ana@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 INSERT INTO tb_user_role (user_id, role_id)
 SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'ana@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- John -> ADMIN + CLIENT (duas roles)
 INSERT INTO tb_user_role (user_id, role_id)
@@ -100,20 +86,20 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
 WHERE u.email = 'john@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 INSERT INTO tb_user_role (user_id, role_id)
 SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'john@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Beatriz -> CLIENT
 INSERT INTO tb_user_role (user_id, role_id)
@@ -121,10 +107,10 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'bia@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Carlos -> ADMIN
 INSERT INTO tb_user_role (user_id, role_id)
@@ -132,10 +118,10 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
 WHERE u.email = 'carlos@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Julia -> CLIENT
 INSERT INTO tb_user_role (user_id, role_id)
@@ -143,10 +129,10 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'julia@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Rafael -> CLIENT
 INSERT INTO tb_user_role (user_id, role_id)
@@ -154,10 +140,10 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'rafa@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 -- Patricia -> ADMIN + CLIENT (duas roles)
 INSERT INTO tb_user_role (user_id, role_id)
@@ -165,24 +151,21 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
 WHERE u.email = 'patricia@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
 INSERT INTO tb_user_role (user_id, role_id)
 SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'patricia@dscatalog.com'
-  AND NOT EXISTS (
-    SELECT 1 FROM tb_user_role ur
-    WHERE ur.user_id = u.id AND ur.role_id = r.id
-);
+  AND NOT EXISTS (SELECT 1
+                  FROM tb_user_role ur
+                  WHERE ur.user_id = u.id
+                    AND ur.role_id = r.id);
 
--- =========================
--- CATEGORIAS (timestamp com precisão de microssegundos)
--- =========================
 INSERT INTO tb_category (name, created_at, updated_at)
 SELECT 'Eletrônicos', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Eletrônicos');
@@ -223,9 +206,6 @@ INSERT INTO tb_category (name, created_at, updated_at)
 SELECT 'Acessórios', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Acessórios');
 
--- =========================
--- PRODUTOS
--- =========================
 INSERT INTO tb_product (name, description, price, img_url, date)
 SELECT 'Smartphone XYZ', 'Android 14, 128GB', 1999.90, 'https://example.com/img/smartphone.png', CURRENT_TIMESTAMP(6)
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Smartphone XYZ');
@@ -239,7 +219,11 @@ SELECT 'Livro Clean Code', 'Robert C. Martin', 139.90, NULL, CURRENT_TIMESTAMP(6
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Livro Clean Code');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Notebook Ultra 14', 'Intel i7, 16GB, 512GB SSD', 5499.90, 'https://example.com/img/notebook.png', CURRENT_TIMESTAMP(6)
+SELECT 'Notebook Ultra 14',
+       'Intel i7, 16GB, 512GB SSD',
+       5499.90,
+       'https://example.com/img/notebook.png',
+       CURRENT_TIMESTAMP(6)
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Notebook Ultra 14');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
@@ -346,501 +330,564 @@ INSERT INTO tb_product (name, description, price, img_url, date)
 SELECT 'Álbum de Fotos', 'Capa dura, 200 fotos', 89.90, NULL, CURRENT_TIMESTAMP(6)
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Álbum de Fotos');
 
--- =========================
--- RELAÇÕES N:N (tb_product_category)
--- (idempotente com WHERE NOT EXISTS)
--- =========================
-
--- Helper macro (padrão idempotente):
--- INSERT INTO tb_product_category (product_id, category_id)
--- SELECT p.id, c.id FROM tb_product p JOIN tb_category c ON c.name = '<CATEGORIA>'
--- WHERE p.name = '<PRODUTO>'
---   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
-
 -- 1 Smartphone XYZ -> Eletrônicos, Informática, Games, Acessórios
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Smartphone XYZ'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Smartphone XYZ'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Smartphone XYZ'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Smartphone XYZ'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 2 Camiseta Básica -> Roupas, Esportes, Acessórios, Casa e Jardim
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Roupas'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Roupas'
 WHERE p.name = 'Camiseta Básica'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Esportes'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Esportes'
 WHERE p.name = 'Camiseta Básica'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Camiseta Básica'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Camiseta Básica'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 3 Livro Clean Code -> Livros, Informática, Eletrônicos, Games
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Livros'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'Livro Clean Code'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Livro Clean Code'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Livro Clean Code'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Livro Clean Code'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 4 Notebook Ultra 14 -> Eletrônicos, Informática, Games, Acessórios, Livros
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Notebook Ultra 14'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Notebook Ultra 14'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Notebook Ultra 14'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Notebook Ultra 14'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Livros'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'Notebook Ultra 14'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 5 Fone Bluetooth Pro -> Eletrônicos, Acessórios, Esportes, Games
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Fone Bluetooth Pro'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Fone Bluetooth Pro'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Esportes'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Esportes'
 WHERE p.name = 'Fone Bluetooth Pro'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Fone Bluetooth Pro'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 6 Smart TV 50 4K -> Eletrônicos, Casa e Jardim, Games, Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Smart TV 50 4K'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Smart TV 50 4K'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Smart TV 50 4K'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Smart TV 50 4K'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 7 Tênis Running X -> Esportes, Roupas, Acessórios, Casa e Jardim
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Esportes'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Esportes'
 WHERE p.name = 'Tênis Running X'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Roupas'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Roupas'
 WHERE p.name = 'Tênis Running X'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Tênis Running X'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Tênis Running X'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 8 Mochila Daypack -> Acessórios, Roupas, Esportes, Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Mochila Daypack'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Roupas'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Roupas'
 WHERE p.name = 'Mochila Daypack'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Esportes'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Esportes'
 WHERE p.name = 'Mochila Daypack'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Mochila Daypack'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 9 Cafeteira Espresso -> Casa e Jardim, Eletrônicos, Acessórios
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Cafeteira Espresso'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Cafeteira Espresso'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Cafeteira Espresso'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 10 Teclado Mecânico -> Informática, Eletrônicos, Games, Acessórios, Livros
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Livros'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
-
--- -------- Produtos 11..30 (1–2 categorias) --------
 
 -- 11 Mouse Gamer RGB -> Games, Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Mouse Gamer RGB'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Mouse Gamer RGB'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 12 Headset Surround 7.1 -> Games, Eletrônicos
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Headset Surround 7.1'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Headset Surround 7.1'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 13 Monitor 27 QHD -> Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Monitor 27 QHD'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 14 Impressora Wi-Fi -> Informática, Eletrônicos
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Impressora Wi-Fi'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Impressora Wi-Fi'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 15 Tablet 10 -> Eletrônicos, Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Tablet 10'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Tablet 10'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 16 E-book Reader -> Eletrônicos, Livros
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'E-book Reader'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Livros'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'E-book Reader'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 17 Liquidificador Turbo -> Casa e Jardim
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Liquidificador Turbo'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 18 Ventilador Silencioso -> Casa e Jardim, Eletrônicos
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Ventilador Silencioso'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Ventilador Silencioso'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 19 Webcam Full HD -> Informática, Acessórios
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Webcam Full HD'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Webcam Full HD'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 20 Microfone Condenser -> Eletrônicos, Informática
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Microfone Condenser'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Informática'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Informática'
 WHERE p.name = 'Microfone Condenser'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 21 Cadeira Gamer -> Games, Casa e Jardim
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Cadeira Gamer'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Cadeira Gamer'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 22 Smartwatch Fit -> Eletrônicos, Esportes
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Smartwatch Fit'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Esportes'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Esportes'
 WHERE p.name = 'Smartwatch Fit'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 23 Óculos de Sol -> Acessórios, Beleza
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Óculos de Sol'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Beleza'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Beleza'
 WHERE p.name = 'Óculos de Sol'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 24 Perfume Classic -> Beleza
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Beleza'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Beleza'
 WHERE p.name = 'Perfume Classic'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 25 Jogo de Panelas -> Casa e Jardim
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Jogo de Panelas'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 26 Travesseiro Ortopédico -> Casa e Jardim, Beleza
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Travesseiro Ortopédico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Beleza'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Beleza'
 WHERE p.name = 'Travesseiro Ortopédico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 27 Lego 500 Peças -> Brinquedos
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Brinquedos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Brinquedos'
 WHERE p.name = 'Lego 500 Peças'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 28 Console X Series -> Games, Eletrônicos
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Console X Series'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Eletrônicos'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Eletrônicos'
 WHERE p.name = 'Console X Series'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 29 Controle Sem Fio -> Games, Acessórios
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Games'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Games'
 WHERE p.name = 'Controle Sem Fio'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Acessórios'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Acessórios'
 WHERE p.name = 'Controle Sem Fio'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 -- 30 Álbum de Fotos -> Casa e Jardim, Livros
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Casa e Jardim'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Casa e Jardim'
 WHERE p.name = 'Álbum de Fotos'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
 
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
-FROM tb_product p JOIN tb_category c ON c.name = 'Livros'
+FROM tb_product p
+         JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'Álbum de Fotos'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);

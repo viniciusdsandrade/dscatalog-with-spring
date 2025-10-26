@@ -57,8 +57,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (results.isEmpty())
             throw new UsernameNotFoundException("Email not found: " + username);
         User user = new User();
-        user.setEmail(results.get(0).getUsername());
-        user.setPassword(results.get(0).getPassword());
+        user.setEmail(results.getFirst().getUsername());
+        user.setPassword(results.getFirst().getPassword());
         results.forEach(projection -> user.addRole(
                 new Role(projection.getRoleId(), projection.getAuthority())
         ));

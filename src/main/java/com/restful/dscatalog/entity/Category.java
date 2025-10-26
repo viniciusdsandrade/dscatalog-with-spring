@@ -22,7 +22,10 @@ import static lombok.AccessLevel.NONE;
 @Table(
         name = "tb_category",
         uniqueConstraints = {
-                @UniqueConstraint(name = "category_name_unique", columnNames = "name")
+                @UniqueConstraint(
+                        name = "category_name_unique",
+                        columnNames = "name"
+                )
         }
 )
 public class Category implements Cloneable {
