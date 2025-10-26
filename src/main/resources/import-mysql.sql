@@ -1,51 +1,51 @@
 INSERT INTO tb_role (authority)
 SELECT 'ROLE_ADMIN'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_ADMIN');
 
 INSERT INTO tb_role (authority)
 SELECT 'ROLE_CLIENT'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE authority = 'ROLE_CLIENT');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Bob', 'Stone', 'bob@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'bob@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Ana', 'White', 'ana@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'ana@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'John', 'Doe', 'john@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'john@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Beatriz', 'Lima', 'bia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'bia@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Carlos', 'Silva', 'carlos@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'carlos@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Julia', 'Costa', 'julia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'julia@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Rafael', 'Souza', 'rafa@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'rafa@dscatalog.com');
 
 INSERT INTO tb_user (first_name, last_name, email, password)
 SELECT 'Patricia', 'Gomes', 'patricia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG'
-FROM (SELECT 1) x
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'patricia@dscatalog.com');
 
 INSERT INTO tb_user_role (user_id, role_id)
@@ -140,211 +140,208 @@ FROM tb_user u
 WHERE u.email = 'patricia@dscatalog.com'
   AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
 
+SET @now = NOW(6);
+
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Eletrônicos', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Eletrônicos', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Eletrônicos');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Roupas', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Roupas', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Roupas');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Livros', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Livros', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Livros');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Informática', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Informática', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Informática');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Esportes', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Esportes', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Esportes');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Casa e Jardim', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Casa e Jardim', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Casa e Jardim');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Beleza', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Beleza', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Beleza');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Brinquedos', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Brinquedos', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Brinquedos');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Games', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Games', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Games');
 
 INSERT INTO tb_category (name, created_at, updated_at)
-SELECT 'Acessórios', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Acessórios', @now, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_category WHERE name = 'Acessórios');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Smartphone XYZ', 'Android 14, 128GB', 1999.90, 'https://example.com/img/smartphone.png', CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Smartphone XYZ', 'Android 14, 128GB', 1999.90, 'https://example.com/img/smartphone.png', @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Smartphone XYZ');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Camiseta Básica', '100% algodão', 49.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Camiseta Básica', '100% algodão', 49.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Camiseta Básica');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Livro Clean Code', 'Robert C. Martin', 139.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Livro Clean Code', 'Robert C. Martin', 139.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Livro Clean Code');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Notebook Ultra 14',
-       'Intel i7, 16GB, 512GB SSD',
-       5499.90,
-       'https://example.com/img/notebook.png',
-       CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Notebook Ultra 14', 'Intel i7, 16GB, 512GB SSD', 5499.90, 'https://example.com/img/notebook.png', @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Notebook Ultra 14');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Fone Bluetooth Pro', 'ANC, 30h bateria', 499.90, 'https://example.com/img/fone.png', CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Fone Bluetooth Pro', 'ANC, 30h bateria', 499.90, 'https://example.com/img/fone.png', @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Fone Bluetooth Pro');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Smart TV 50 4K', 'Painel 4K, HDR10, 60Hz', 2399.90, 'https://example.com/img/tv.png', CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Smart TV 50 4K', 'Painel 4K, HDR10, 60Hz', 2399.90, 'https://example.com/img/tv.png', @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Smart TV 50 4K');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Tênis Running X', 'Amortecimento responsivo', 399.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Tênis Running X', 'Amortecimento responsivo', 399.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Tênis Running X');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Mochila Daypack', '25L, compartimento para notebook', 189.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Mochila Daypack', '25L, compartimento para notebook', 189.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Mochila Daypack');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Cafeteira Espresso', '15 bar, reservatório 1.2L', 599.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Cafeteira Espresso', '15 bar, reservatório 1.2L', 599.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Cafeteira Espresso');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Teclado Mecânico', 'Switch brown, ABNT2', 349.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Teclado Mecânico', 'Switch brown, ABNT2', 349.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Teclado Mecânico');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Mouse Gamer RGB', '16000 DPI, 6 botões', 229.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Mouse Gamer RGB', '16000 DPI, 6 botões', 229.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Mouse Gamer RGB');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Headset Surround 7.1', 'Microfone destacável', 379.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Headset Surround 7.1', 'Microfone destacável', 379.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Headset Surround 7.1');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Monitor 27 QHD', '2560x1440, 75Hz', 1599.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Monitor 27 QHD', '2560x1440, 75Hz', 1599.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Monitor 27 QHD');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Impressora Wi-Fi', 'Inkjet, duplex', 699.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Impressora Wi-Fi', 'Inkjet, duplex', 699.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Impressora Wi-Fi');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Tablet 10', 'Tela 10", 64GB', 1299.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Tablet 10', 'Tela 10", 64GB', 1299.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Tablet 10');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'E-book Reader', 'E-ink 6.8", luz ajustável', 799.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'E-book Reader', 'E-ink 6.8", luz ajustável', 799.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'E-book Reader');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Liquidificador Turbo', '900W, 12 velocidades', 249.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Liquidificador Turbo', '900W, 12 velocidades', 249.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Liquidificador Turbo');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Ventilador Silencioso', '40cm, 3 velocidades', 199.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Ventilador Silencioso', '40cm, 3 velocidades', 199.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Ventilador Silencioso');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Webcam Full HD', '1080p, autofoco', 289.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Webcam Full HD', '1080p, autofoco', 289.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Webcam Full HD');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Microfone Condenser', 'USB, padrão cardioide', 499.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Microfone Condenser', 'USB, padrão cardioide', 499.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Microfone Condenser');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Cadeira Gamer', 'Apoio lombar, reclinável', 1199.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Cadeira Gamer', 'Apoio lombar, reclinável', 1199.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Cadeira Gamer');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Smartwatch Fit', 'GPS, batimentos', 899.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Smartwatch Fit', 'GPS, batimentos', 899.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Smartwatch Fit');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Óculos de Sol', 'Proteção UV400', 149.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Óculos de Sol', 'Proteção UV400', 149.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Óculos de Sol');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Perfume Classic', 'Eau de parfum 100ml', 299.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Perfume Classic', 'Eau de parfum 100ml', 299.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Perfume Classic');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Jogo de Panelas', 'Antiaderente, 5 peças', 349.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Jogo de Panelas', 'Antiaderente, 5 peças', 349.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Jogo de Panelas');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Travesseiro Ortopédico', 'Espuma viscoelástica', 159.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Travesseiro Ortopédico', 'Espuma viscoelástica', 159.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Travesseiro Ortopédico');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Lego 500 Peças', 'Blocos de montar', 219.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Lego 500 Peças', 'Blocos de montar', 219.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Lego 500 Peças');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Console X Series', '4K, 1TB SSD', 4399.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Console X Series', '4K, 1TB SSD', 4399.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Console X Series');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Controle Sem Fio', 'Bluetooth, vibração', 349.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Controle Sem Fio', 'Bluetooth, vibração', 349.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Controle Sem Fio');
 
 INSERT INTO tb_product (name, description, price, img_url, date)
-SELECT 'Álbum de Fotos', 'Capa dura, 200 fotos', 89.90, NULL, CURRENT_TIMESTAMP(6)
-FROM (SELECT 1) x
+SELECT 'Álbum de Fotos', 'Capa dura, 200 fotos', 89.90, NULL, @now
+FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM tb_product WHERE name = 'Álbum de Fotos');
 
--- 1 Smartphone XYZ -> Eletrônicos, Informática, Games, Acessórios
 INSERT INTO tb_product_category (product_id, category_id)
 SELECT p.id, c.id
 FROM tb_product p
@@ -609,6 +606,8 @@ FROM tb_product p
          JOIN tb_category c ON c.name = 'Livros'
 WHERE p.name = 'Teclado Mecânico'
   AND NOT EXISTS (SELECT 1 FROM tb_product_category pc WHERE pc.product_id = p.id AND pc.category_id = c.id);
+
+-- -------- Produtos 11..30 (1–2 categorias) --------
 
 -- 11 Mouse Gamer RGB -> Games, Informática
 INSERT INTO tb_product_category (product_id, category_id)

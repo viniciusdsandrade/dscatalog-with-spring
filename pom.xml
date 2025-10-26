@@ -12,7 +12,6 @@
     <artifactId>dscatalog</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>dscatalog</name>
-    <description>Restful tutorial project with Java and Spring Boot with the catalogue theme</description>
     <url/>
     <licenses>
         <license/>
