@@ -1,4 +1,4 @@
-package com.restful.dscatalog.config;
+package com.restful.dscatalog.security;
 
 import java.util.Arrays;
 

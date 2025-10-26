@@ -1,4 +1,4 @@
-package com.restful.dscatalog.config.customgrant;
+package com.restful.dscatalog.security.customgrant;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -64,7 +64,7 @@ public class CustomPasswordAuthenticationConverter implements AuthenticationConv
 		parameters.forEach((key, value) -> {
 			if (!key.equals(OAuth2ParameterNames.GRANT_TYPE) &&
 					!key.equals(OAuth2ParameterNames.SCOPE)) {
-				additionalParameters.put(key, value.get(0));
+				additionalParameters.put(key, value.getFirst());
 			}
 		});
 		

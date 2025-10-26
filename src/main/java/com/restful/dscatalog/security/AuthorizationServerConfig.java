@@ -1,4 +1,4 @@
-package com.restful.dscatalog.config;
+package com.restful.dscatalog.security;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -43,9 +43,9 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Acce
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
-import com.restful.dscatalog.config.customgrant.CustomPasswordAuthenticationConverter;
-import com.restful.dscatalog.config.customgrant.CustomPasswordAuthenticationProvider;
-import com.restful.dscatalog.config.customgrant.CustomUserAuthorities;
+import com.restful.dscatalog.security.customgrant.CustomPasswordAuthenticationConverter;
+import com.restful.dscatalog.security.customgrant.CustomPasswordAuthenticationProvider;
+import com.restful.dscatalog.security.customgrant.CustomUserAuthorities;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;

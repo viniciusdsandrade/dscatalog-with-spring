@@ -1,4 +1,4 @@
-package com.restful.dscatalog.doc;
+package com.restful.dscatalog.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

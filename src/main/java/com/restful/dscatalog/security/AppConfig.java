@@ -1,4 +1,4 @@
-package com.restful.dscatalog.config;
+package com.restful.dscatalog.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

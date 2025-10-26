@@ -1,4 +1,4 @@
-package com.restful.dscatalog.config.customgrant;
+package com.restful.dscatalog.security.customgrant;
 
 import java.util.Collections;
 import java.util.HashSet;
