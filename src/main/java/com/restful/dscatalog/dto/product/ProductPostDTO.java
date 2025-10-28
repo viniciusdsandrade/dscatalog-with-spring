@@ -24,6 +24,8 @@ public record ProductPostDTO(
 ) {
 
     public ProductPostDTO {
-        categoryIds = (categoryIds == null) ? List.of() : List.copyOf(categoryIds);
+        categoryIds = (categoryIds == null)
+                ? List.of()
+                : List.copyOf(categoryIds);
     }
 }

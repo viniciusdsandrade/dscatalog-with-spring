@@ -53,18 +53,18 @@ class ProductControllerTest {
         this.now = LocalDateTime.of(2025, 10, 15, 15, 15, 15);
     }
 
-    private static Product withId(Product p, long id) {
-        setField(p, "id", id);
-        return p;
+    private static Product withId(Product product, long id) {
+        setField(product, "id", id);
+        return product;
     }
 
     private Product newProduct(String name, double price) {
-        Product p = new Product();
-        p.setName(name);
-        p.setDescription(name + " desc");
-        p.setPrice(BigDecimal.valueOf(price));
-        p.setDate(now);
-        return p;
+        return new Product(
+                name,
+                name + " desc",
+                BigDecimal.valueOf(price),
+                now
+        );
     }
 
     private String json(Object obj) throws Exception {
@@ -74,8 +74,8 @@ class ProductControllerTest {
     @Test
     @DisplayName("GET /api/v1/products/{id} -> 200 e corpo com id e name")
     void getById_returnsOk() throws Exception {
-        Product entity = withId(newProduct("Notebook", 5499.90), 1L);
-        given(productService.findById(1L)).willReturn(entity);
+        Product product = withId(newProduct("Notebook", 5499.90), 1L);
+        given(productService.findById(1L)).willReturn(product);
 
         mockMvc.perform(get(baseUrl + "/{id}", 1L))
                 .andExpect(status().isOk())
@@ -86,10 +86,10 @@ class ProductControllerTest {
     @Test
     @DisplayName("GET /api/v1/products -> 200, paginação em headers e conteúdo em DTO")
     void getAll_returnsOkWithHeaders() throws Exception {
-        Product entity = withId(newProduct("P1", 1.0), 10L);
-        var dto = new ProductDetailsDTO(entity);
+        Product product = withId(newProduct("P1", 1.0), 10L);
+        var productDetailsDTO = new ProductDetailsDTO(product);
         var page = new PageImpl<>(
-                List.of(dto),
+                List.of(productDetailsDTO),
                 PageRequest.of(0, 5),
                 1
         );
@@ -107,7 +107,7 @@ class ProductControllerTest {
     @Test
     @DisplayName("POST /api/v1/products -> 201, Location e corpo com DTO")
     void create_returnsCreated() throws Exception {
-        var request = new ProductPostDTO(
+        var productPostDTO = new ProductPostDTO(
                 "Novo Produto",
                 "desc",
                 99.9,
@@ -121,7 +121,7 @@ class ProductControllerTest {
 
         mockMvc.perform(post(baseUrl)
                         .contentType(APPLICATION_JSON)
-                        .content(json(request)))
+                        .content(json(productPostDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", endsWith("/api/v1/products/100")))
                 .andExpect(jsonPath("$.id", is(100)))
@@ -149,9 +149,9 @@ class ProductControllerTest {
         var req = new ProductPostDTO("Editado", "d", 123.0, null, now, List.of());
 
         Product edited = withId(newProduct("Editado", 123.0), 5L);
-        var dto = new ProductDetailsDTO(edited);
+        var productDetailsDTO = new ProductDetailsDTO(edited);
 
-        given(productService.update(eq(5L), any(ProductPostDTO.class))).willReturn(dto);
+        given(productService.update(eq(5L), any(ProductPostDTO.class))).willReturn(productDetailsDTO);
 
         mockMvc.perform(put(baseUrl + "/{id}", 5L)
                         .contentType(APPLICATION_JSON)
@@ -165,8 +165,8 @@ class ProductControllerTest {
     @DisplayName("DELETE /api/v1/products/{id} -> 200 com DTO do removido")
     void delete_returnsOk() throws Exception {
         Product removed = withId(newProduct("ToDel", 5.0), 7L);
-        var dto = new ProductDetailsDTO(removed);
-        given(productService.delete(7L)).willReturn(dto);
+        var productDetailsDTO = new ProductDetailsDTO(removed);
+        given(productService.delete(7L)).willReturn(productDetailsDTO);
 
         mockMvc.perform(delete(baseUrl + "/{id}", 7L))
                 .andExpect(status().isOk())

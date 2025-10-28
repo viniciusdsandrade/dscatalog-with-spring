@@ -71,10 +71,10 @@ public class ProductController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> create(
-            @RequestBody @Valid ProductPostDTO dto,
+            @RequestBody @Valid ProductPostDTO productPostDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Product product = productService.create(dto);
+        Product product = productService.create(productPostDTO);
         URI uri = uriComponentsBuilder
                 .path("/api/v1/products/{id}")
                 .buildAndExpand(product.getId())
@@ -94,10 +94,10 @@ public class ProductController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> createByNames(
-            @RequestBody @Valid ProductPostByNameDTO dto,
+            @RequestBody @Valid ProductPostByNameDTO productPostByNameDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Product product = productService.createByCategoryNames(dto);
+        Product product = productService.createByCategoryNames(productPostByNameDTO);
         URI uri = uriComponentsBuilder
                 .path("/api/v1/products/{id}")
                 .buildAndExpand(product.getId())
@@ -109,9 +109,9 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDetailsDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid ProductPostDTO dto
+            @RequestBody @Valid ProductPostDTO productPostDTO
     ) {
-        ProductDetailsDTO updated = productService.update(id, dto);
+        ProductDetailsDTO updated = productService.update(id, productPostDTO);
         return ok(updated);
     }
 

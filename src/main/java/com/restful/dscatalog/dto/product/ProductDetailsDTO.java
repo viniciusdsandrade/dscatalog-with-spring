@@ -20,15 +20,15 @@ public record ProductDetailsDTO(
         @JsonProperty("categories")
         Set<String> categoryNames
 ) {
-    public ProductDetailsDTO(Product p) {
+    public ProductDetailsDTO(Product product) {
         this(
-                p.getId(),
-                p.getName(),
-                p.getDescription(),
-                p.getPrice(),
-                p.getImgUrl(),
-                p.getDate(),
-                p.getCategories().stream()
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getImgUrl(),
+                product.getDate(),
+                product.getCategories().stream()
                         .map(Category::getName)
                         .collect(Collectors.toCollection(LinkedHashSet::new))
         );
