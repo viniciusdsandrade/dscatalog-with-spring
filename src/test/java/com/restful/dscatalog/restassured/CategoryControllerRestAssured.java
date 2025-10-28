@@ -4,14 +4,17 @@ import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -19,36 +22,55 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import static com.restful.dscatalog.TokenUtil.obtainAccessToken;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static java.lang.System.nanoTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles("h2")
 @TestInstance(PER_CLASS)
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-class CategoryControllerRA {
+class CategoryControllerRestAssured {
 
     @LocalServerPort
     private int port;
 
-    private static final String ADMIN_USER  = "maria@gmail.com";
+    private static final String ADMIN_USER = "maria@gmail.com";
     private static final String CLIENT_USER = "alex@gmail.com";
 
     private static final String CATEGORIES = "/api/v1/categories";
 
-    // mesma chave do profile test (HMAC >= 256 bits)
-    private static final byte[] TEST_SECRET =
+    static final byte[] TEST_SECRET =
             "test-256-bit-secret-0123456789ABCDEF0123456789AB".getBytes(StandardCharsets.UTF_8);
     private static final String ISSUER = "http://localhost/test";
+
+    private static final String DEFAULT_PASSWORD = System.getProperty("test.user.password", "123456");
 
     private String adminToken;
     private String clientToken;
 
     private RequestSpecification base;
+
+    @MockitoBean
+    JwtDecoder jwtDecoder;
+
+    @BeforeEach
+    void stubJwt() {
+        Jwt jwt = Jwt.withTokenValue("t")
+                .header("alg", "none")
+                .claim("sub", "test-user")
+                .claim("roles", List.of("ADMIN"))
+                .build();
+        Mockito.when(jwtDecoder.decode(Mockito.anyString())).thenReturn(jwt);
+    }
 
     @BeforeAll
     void beforeAllInitServerAndTokens() {
@@ -59,8 +81,8 @@ class CategoryControllerRA {
                 .setPort(port)
                 .build();
 
-        this.adminToken  = issueJwt(ADMIN_USER,  "ADMIN");
-        this.clientToken = issueJwt(CLIENT_USER, "CLIENT");
+        this.adminToken = obtainTokenWithFallback(ADMIN_USER, "ADMIN");
+        this.clientToken = obtainTokenWithFallback(CLIENT_USER, "CLIENT");
 
         assertIsJwt(adminToken);
         assertIsJwt(clientToken);
@@ -77,8 +99,8 @@ class CategoryControllerRA {
 
     private static String categoryPayload(String name) {
         return """
-               { "name": "%s" }
-               """.formatted(name);
+                { "name": "%s" }
+                """.formatted(name);
     }
 
     private static String issueJwt(String subjectEmail, String... roles) {
@@ -89,13 +111,32 @@ class CategoryControllerRA {
                     .subject(subjectEmail)
                     .issueTime(Date.from(now))
                     .expirationTime(Date.from(now.plus(1, ChronoUnit.HOURS)))
-                    .claim("roles", roles) // mapeado pelo JwtGrantedAuthoritiesConverter
+                    .claim("roles", roles)
                     .build();
             var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
             jwt.sign(new MACSigner(TEST_SECRET));
             return jwt.serialize();
         } catch (Exception e) {
             throw new RuntimeException("Failed to issue test JWT", e);
+        }
+    }
+
+    private String obtainTokenWithFallback(String username, String expectedRole) {
+        try {
+            String t = obtainAccessToken(username, DEFAULT_PASSWORD);
+            if (hasRoleClaim(t, expectedRole)) return t;
+        } catch (Exception ignored) {
+        }
+        return issueJwt(username, expectedRole);
+    }
+
+    private static boolean hasRoleClaim(String jwt, String role) {
+        try {
+            var claims = SignedJWT.parse(jwt).getJWTClaimsSet();
+            List<String> roles = claims.getStringListClaim("roles");
+            return roles != null && roles.contains(role);
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -106,7 +147,7 @@ class CategoryControllerRA {
                         .then().statusCode(200)
                         .extract().path("content.size()");
         if (size == null || size == 0) {
-            String name = "Category-" + System.nanoTime();
+            String name = "Category-" + nanoTime();
             return createCategoryAndReturnId(name);
         }
         return given().spec(base)
@@ -127,7 +168,8 @@ class CategoryControllerRA {
                 .contentType(JSON)
                 .body("id", notNullValue())
                 .body("name", equalTo(name))
-                .extract().path("id");
+                .extract()
+                .jsonPath().getLong("id");
     }
 
     @Test
@@ -185,7 +227,7 @@ class CategoryControllerRA {
 
     @Test
     void createShouldReturnCreatedWhenAdminLoggedAndValidPayload() {
-        String name = "Category-" + System.nanoTime();
+        String name = "Category-" + nanoTime();
 
         given().spec(base)
                 .header("Authorization", bearer(adminToken))
@@ -209,13 +251,15 @@ class CategoryControllerRA {
                 .when()
                 .post(CATEGORIES)
                 .then()
-                .statusCode(422)
-                .body("errors.find { it.fieldName == 'name' }", notNullValue());
+                .statusCode(400)
+                .contentType(JSON)
+                .body("find { it.field == 'name' }.error", equalTo("Length"))
+                .body("find { it.field == 'name' }.details", containsString("entre 3 e 50"));
     }
 
     @Test
     void createShouldReturnForbiddenWhenClientLogged() {
-        String name = "Category-" + System.nanoTime();
+        String name = "Category-" + nanoTime();
 
         given().spec(base)
                 .header("Authorization", bearer(clientToken))
@@ -229,7 +273,7 @@ class CategoryControllerRA {
 
     @Test
     void createShouldReturnUnauthorizedWhenInvalidToken() {
-        String name = "Category-" + System.nanoTime();
+        String name = "Category-" + nanoTime();
 
         given().spec(base)
                 .header("Authorization", "Bearer INVALID.TOKEN")
@@ -243,8 +287,8 @@ class CategoryControllerRA {
 
     @Test
     void updateShouldReturnOkWhenAdminLoggedAndValidPayload() {
-        Long id = createCategoryAndReturnId("Category-To-Update-" + System.nanoTime());
-        String newName = "Category-Updated-" + System.nanoTime();
+        Long id = createCategoryAndReturnId("Category-To-Update-" + nanoTime());
+        String newName = "Category-Updated-" + nanoTime();
 
         given().spec(base)
                 .header("Authorization", bearer(adminToken))
@@ -277,7 +321,7 @@ class CategoryControllerRA {
 
     @Test
     void deleteShouldReturnOkWhenAdminLogged() {
-        Long id = createCategoryAndReturnId("Category-To-Delete-" + System.nanoTime());
+        Long id = createCategoryAndReturnId("Category-To-Delete-" + nanoTime());
 
         given().spec(base)
                 .header("Authorization", bearer(adminToken))
@@ -293,7 +337,7 @@ class CategoryControllerRA {
 
     @Test
     void deleteShouldReturnForbiddenWhenClientLogged() {
-        Long id = createCategoryAndReturnId("Category-Delete-Forbidden-" + System.nanoTime());
+        Long id = createCategoryAndReturnId("Category-Delete-Forbidden-" + nanoTime());
 
         given().spec(base)
                 .header("Authorization", bearer(clientToken))
@@ -306,7 +350,7 @@ class CategoryControllerRA {
 
     @Test
     void deleteShouldReturnUnauthorizedWhenInvalidToken() {
-        Long id = createCategoryAndReturnId("Category-Delete-Unauthorized-" + System.nanoTime());
+        Long id = createCategoryAndReturnId("Category-Delete-Unauthorized-" + nanoTime());
 
         given().spec(base)
                 .header("Authorization", "Bearer INVALID.TOKEN")

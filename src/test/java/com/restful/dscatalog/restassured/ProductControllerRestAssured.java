@@ -1,4 +1,4 @@
 package com.restful.dscatalog.restassured;
 
-public class ProductControllerRA {
+public class ProductControllerRestAssured {
 }
