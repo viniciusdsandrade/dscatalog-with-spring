@@ -13,6 +13,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority; // necessário para authorities do jwt
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt; // postprocessor de JWT para MockMvc
+
 import static org.hamcrest.Matchers.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
@@ -22,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("h2")
 @Sql(
         scripts = {
                 "/sql/01-clean.sql",
@@ -32,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         },
         executionPhase = BEFORE_TEST_METHOD
 )
-class ProductControllerIT {
+class ProductControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,10 +47,10 @@ class ProductControllerIT {
     @Test
     @DisplayName("GET /api/v1/products/{id} deve retornar 200 e o produto")
     void getById_ok() throws Exception {
-        mockMvc.perform(get("/api/v1/products/{id}", 1L))
+        mockMvc.perform(get("/api/v1/products/{id}", 1L).with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Smartphone X"))
+                .andExpect(jsonPath("$.name").value("Smartphone XYZ"))
                 .andExpect(jsonPath("$.categories", hasSize(greaterThanOrEqualTo(1))));
     }
 
@@ -56,7 +60,8 @@ class ProductControllerIT {
         mockMvc.perform(get("/api/v1/products")
                         .param("size", "2")
                         .param("page", "0")
-                        .param("sort", "id,asc"))
+                        .param("sort", "id,asc")
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Total-Count", notNullValue()))
                 .andExpect(header().string("X-Page-Number", "0"))
@@ -74,10 +79,11 @@ class ProductControllerIT {
                 "description", "Mouse com 6 botões e DPI ajustável",
                 "price", 199.90,
                 "imgUrl", "https://img.example/mouse.png",
-                "categoryNames", List.of("Informática", "Periféricos")
+                "categoryNames", List.of("Informática", "Acessórios")
         );
 
         mockMvc.perform(post("/api/v1/products/by-names")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isCreated())
@@ -99,6 +105,7 @@ class ProductControllerIT {
         );
 
         mockMvc.perform(put("/api/v1/products/{id}", 1L)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
@@ -109,9 +116,10 @@ class ProductControllerIT {
     @Test
     @DisplayName("DELETE /api/v1/products/{id} deve remover (200) e retornar DTO do removido")
     void delete_ok() throws Exception {
-        mockMvc.perform(delete("/api/v1/products/{id}", 1L))
+        mockMvc.perform(delete("/api/v1/products/{id}", 1L)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("PC Gamer"));
+                .andExpect(jsonPath("$.name").value("Smartphone XYZ"));
     }
 }
