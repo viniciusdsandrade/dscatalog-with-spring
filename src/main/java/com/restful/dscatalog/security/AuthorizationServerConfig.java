@@ -52,7 +52,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
-@Profile("!test")
+@Profile({"!test", "!h2"})
 @Configuration
 public class AuthorizationServerConfig {
 
@@ -152,10 +152,13 @@ public class AuthorizationServerConfig {
         return context -> {
             OAuth2ClientAuthenticationToken principal = context.getPrincipal();
             CustomUserAuthorities user = (CustomUserAuthorities) principal.getDetails();
-            List<String> authorities = user.authorities().stream().map(GrantedAuthority::getAuthority).toList();
+            List<String> roles = user.authorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
+                    .toList();
             if (context.getTokenType().getValue().equals("access_token")) {
                 context.getClaims()
-                        .claim("authorities", authorities)
+                        .claim("roles", roles)
                         .claim("username", user.username());
             }
         };
