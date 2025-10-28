@@ -109,8 +109,8 @@ class ProductServiceImplTest {
     @DisplayName("findById: existente retorna entidade; inexistente propaga EntityNotFoundException")
     void findById_proxy_behavior() {
         Product existing = withId(newProduct("Webcam", 289.90), 10L);
-        given(productRepository.getReferenceById(10L)).willReturn(existing);
-        given(productRepository.getReferenceById(9999L)).willThrow(new EntityNotFoundException());
+        given(productRepository.findById(10L)).willReturn(Optional.of(existing));
+        given(productRepository.findById(9999L)).willThrow(new EntityNotFoundException());
 
         assertThat(service.findById(10L).getName()).isEqualTo("Webcam");
         assertThrows(EntityNotFoundException.class, () -> service.findById(9999L));
@@ -126,7 +126,7 @@ class ProductServiceImplTest {
         var out = service.listAll(PageRequest.of(0, 1));
         assertThat(out.getTotalElements()).isEqualTo(2);
         assertThat(out.getContent()).hasSize(1);
-        assertThat(out.getContent().get(0)).isInstanceOf(ProductDetailsDTO.class);
+        assertThat(out.getContent().getFirst()).isInstanceOf(ProductDetailsDTO.class);
     }
 
     @Test

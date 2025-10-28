@@ -75,14 +75,16 @@ class CategoryServiceImplTest {
     }
 
     @Test
-    @DisplayName("findById: existente retorna entidade; inexistente propaga EntityNotFoundException")
+    @DisplayName("findById: existente retorna entidade; inexistente lança ResourceNotFoundException")
     void findById_behaviour() {
         Category existing = withId(newCategory("Games"), 5L);
-        given(categoryRepository.getReferenceById(5L)).willReturn(existing);
-        given(categoryRepository.getReferenceById(9999L)).willThrow(new EntityNotFoundException());
+
+        // mocka o que o service realmente usa hoje
+        given(categoryRepository.findById(5L)).willReturn(Optional.of(existing));
+        given(categoryRepository.findById(9999L)).willReturn(Optional.empty());
 
         assertThat(service.findById(5L).getName()).isEqualTo("Games");
-        assertThrows(EntityNotFoundException.class, () -> service.findById(9999L));
+        assertThrows(ResourceNotFoundException.class, () -> service.findById(9999L));
     }
 
     @Test
@@ -96,7 +98,7 @@ class CategoryServiceImplTest {
 
         assertThat(out.getTotalElements()).isEqualTo(2);
         assertThat(out.getContent()).hasSize(1);
-        assertThat(out.getContent().get(0).name()).isEqualTo("Livros");
+        assertThat(out.getContent().getFirst().name()).isEqualTo("Livros");
     }
 
     @Test

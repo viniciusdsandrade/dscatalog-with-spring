@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,21 +37,29 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository,
-                              CategoryRepository categoryRepository) {
+    public ProductServiceImpl(
+            ProductRepository productRepository,
+            CategoryRepository categoryRepository
+    ) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
 
     @Transactional
     @Override
-    public Product create(@Valid ProductPostDTO dto) {
+    public Product create(@Valid ProductPostDTO productPostDTO) {
         try {
-            Product p = new Product();
-            applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
-            applyCategoriesByIds(dto.categoryIds(), p);
-            productRepository.saveAndFlush(p);
-            return p;
+            Product product = new Product();
+            applyScalarFields(
+                    productPostDTO.name(),
+                    productPostDTO.description(),
+                    productPostDTO.price(),
+                    productPostDTO.imgUrl(),
+                    productPostDTO.date(), product
+            );
+            applyCategoriesByIds(productPostDTO.categoryIds(), product);
+            productRepository.saveAndFlush(product);
+            return product;
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateEntryException("Entrada duplicada para Produto.");
         }
@@ -58,14 +67,22 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public Product createByCategoryNames(@Valid ProductPostByNameDTO dto) {
+    public Product createByCategoryNames(@Valid ProductPostByNameDTO productPostByNameDTO) {
         try {
-            Product p = new Product();
-            applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(),
-                    dto.date() != null ? dto.date() : LocalDateTime.now(), p);
-            applyCategoriesByNames(dto.categoryNames(), p);
-            productRepository.saveAndFlush(p);
-            return p;
+            Product product = new Product();
+            applyScalarFields(
+                    productPostByNameDTO.name(),
+                    productPostByNameDTO.description(),
+                    productPostByNameDTO.price(),
+                    productPostByNameDTO.imgUrl(),
+                    productPostByNameDTO.date() != null
+                            ? productPostByNameDTO.date()
+                            : LocalDateTime.now(), product
+            );
+
+            applyCategoriesByNames(productPostByNameDTO.categoryNames(), product);
+            productRepository.saveAndFlush(product);
+            return product;
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateEntryException("Entrada duplicada para Produto.");
         }
@@ -73,12 +90,26 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product findById(Long id) {
-        return productRepository.getReferenceById(id);
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
     }
 
     @Override
     public Page<ProductDetailsDTO> listAll(Pageable paginacao) {
-        return productRepository.findAll(paginacao).map(ProductDetailsDTO::new);
+        Page<Product> page = productRepository.findAll(paginacao);
+        if (page.isEmpty()) return page.map(ProductDetailsDTO::new);
+
+        List<Long> ids = page.stream().map(Product::getId).toList();
+
+        List<Product> fetched = productRepository.findAllWithCategoriesByIdIn(ids);
+
+        Map<Long, Product> byIdHydrated = fetched.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        return page.map(p -> {
+            Product product = byIdHydrated.getOrDefault(p.getId(), p);
+            return new ProductDetailsDTO(product);
+        });
     }
 
     @Override
@@ -98,17 +129,22 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public @Valid ProductDetailsDTO update(Long id, @Valid ProductPostDTO dto) {
-        Product p = productRepository.getReferenceById(id);
+    public @Valid ProductDetailsDTO update(Long id, @Valid ProductPostDTO productPostDTO) {
+        Product product = productRepository.getReferenceById(id);
 
-        applyScalarFields(dto.name(), dto.description(), dto.price(), dto.imgUrl(), dto.date(), p);
+        applyScalarFields(
+                productPostDTO.name(),
+                productPostDTO.description(),
+                productPostDTO.price(),
+                productPostDTO.imgUrl(),
+                productPostDTO.date(),
+                product
+        );
 
-        if (dto.categoryIds() != null) {
-            applyCategoriesByIds(dto.categoryIds(), p);
-        }
+        if (productPostDTO.categoryIds() != null) applyCategoriesByIds(productPostDTO.categoryIds(), product);
 
-        productRepository.save(p);
-        return new ProductDetailsDTO(p);
+        productRepository.save(product);
+        return new ProductDetailsDTO(product);
     }
 
     @Transactional
@@ -126,12 +162,14 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private void applyScalarFields(String name,
-                                   String description,
-                                   Double price,
-                                   String imgUrl,
-                                   LocalDateTime date,
-                                   Product entity) {
+    private void applyScalarFields(
+            String name,
+            String description,
+            Double price,
+            String imgUrl,
+            LocalDateTime date,
+            Product entity
+    ) {
         if (name != null) entity.setName(name.trim());
         if (description != null) entity.setDescription(description);
         if (price != null) entity.setPrice(BigDecimal.valueOf(price));
@@ -139,20 +177,20 @@ public class ProductServiceImpl implements ProductService {
         if (date != null) entity.setDate(date);
     }
 
-    private void applyCategoriesByIds(List<Long> categoryIds, Product entity) {
-        entity.getCategories().clear();
+    private void applyCategoriesByIds(List<Long> categoryIds, Product product) {
+        product.getCategories().clear();
         if (categoryIds == null || categoryIds.isEmpty()) return;
-        entity.getCategories().addAll(resolveCategories(categoryIds));
+        product.getCategories().addAll(resolveCategories(categoryIds));
     }
 
-    private void applyCategoriesByNames(Collection<String> rawNames, Product entity) {
-        entity.getCategories().clear();
+    private void applyCategoriesByNames(Collection<String> rawNames, Product product) {
+        product.getCategories().clear();
         if (rawNames == null || rawNames.isEmpty()) return;
 
         LinkedHashSet<String> normalized = normalizeNames(rawNames);
         for (String normalizedLower : normalized) {
             Category cat = findOrCreateCategoryCaseInsensitive(normalizedLower);
-            entity.getCategories().add(cat);
+            product.getCategories().add(cat);
         }
     }
 
@@ -185,9 +223,9 @@ public class ProductServiceImpl implements ProductService {
         return found;
     }
 
-    private static String capitalize(String s) {
-        if (s == null || s.isEmpty()) return s;
-        if (s.length() == 1) return s.toUpperCase();
-        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    private static String capitalize(String string) {
+        if (string == null || string.isEmpty()) return string;
+        if (string.length() == 1) return string.toUpperCase();
+        return Character.toUpperCase(string.charAt(0)) + string.substring(1);
     }
 }
