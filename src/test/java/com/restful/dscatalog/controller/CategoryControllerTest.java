@@ -53,26 +53,24 @@ class CategoryControllerTest {
         this.baseUrl = "/api/v1/categories";
     }
 
-    private static Category withId(Category c, long id) {
-        ReflectionTestUtils.setField(c, "id", id);
-        return c;
+    private static Category withId(Category category, long id) {
+        ReflectionTestUtils.setField(category, "id", id);
+        return category;
     }
 
     private static Category newCategory(String name) {
-        Category c = new Category();
-        c.setName(name);
-        return c;
+        return new Category(name);
     }
 
-    private String json(Object o) throws Exception {
-        return objectMapper.writeValueAsString(o);
+    private String json(Object obj) throws Exception {
+        return objectMapper.writeValueAsString(obj);
     }
 
     @Test
     @DisplayName("GET /api/v1/categories/{id} -> 200 e corpo com id e name")
     void getById_ok() throws Exception {
-        Category entity = withId(newCategory("Eletrônicos"), 10L);
-        given(categoryService.findById(10L)).willReturn(entity);
+        Category category = withId(newCategory("Eletrônicos"), 10L);
+        given(categoryService.findById(10L)).willReturn(category);
 
         mockMvc.perform(get(baseUrl + "/{id}", 10L))
                 .andExpect(status().isOk())
@@ -84,8 +82,8 @@ class CategoryControllerTest {
     @Test
     @DisplayName("GET /api/v1/categories -> 200, paginação e cabeçalhos de paginação")
     void getAll_ok_withPaginationHeaders() throws Exception {
-        var dto = new CategoryDetailsDTO(1L, "Informática");
-        var page = new PageImpl<>(List.of(dto), PageRequest.of(0, 5), 1);
+        var categoryDetailsDTO = new CategoryDetailsDTO(1L, "Informática");
+        var page = new PageImpl<>(List.of(categoryDetailsDTO), PageRequest.of(0, 5), 1);
         given(categoryService.listAll(any(Pageable.class))).willReturn(page);
 
         mockMvc.perform(get(baseUrl)
@@ -156,8 +154,8 @@ class CategoryControllerTest {
     @Test
     @DisplayName("DELETE /api/v1/categories/{id} -> 200 e retorna DTO do removido")
     void delete_ok() throws Exception {
-        var dto = new CategoryDetailsDTO(33L, "Excluir");
-        given(categoryService.delete(33L)).willReturn(dto);
+        var categoryDetailsDTO = new CategoryDetailsDTO(33L, "Excluir");
+        given(categoryService.delete(33L)).willReturn(categoryDetailsDTO);
 
         mockMvc.perform(delete(baseUrl + "/{id}", 33L))
                 .andExpect(status().isOk())

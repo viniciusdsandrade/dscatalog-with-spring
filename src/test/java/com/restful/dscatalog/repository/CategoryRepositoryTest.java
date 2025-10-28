@@ -32,16 +32,14 @@ class CategoryRepositoryTest {
         testEntityManager.clear();
     }
 
-    private Category cat(String name) {
-        var c = new Category();
-        c.setName(name);
-        return testEntityManager.persistAndFlush(c);
+    private Category newCategory(String name) {
+        return testEntityManager.persistAndFlush(new Category(name));
     }
 
     @Test
     @DisplayName("findByNameIgnoreCase: retorna presente (case-insensitive) quando existe")
     void findByNameIgnoreCase_returnsPresent_whenExists_caseInsensitive() {
-        var saved = cat("Eletrônicos");
+        var saved = newCategory("Eletrônicos");
         testEntityManager.clear();
 
         Optional<Category> opt = categoryRepository.findByNameIgnoreCase("eLeTrÔnIcOs");
@@ -54,7 +52,7 @@ class CategoryRepositoryTest {
     @Test
     @DisplayName("findByNameIgnoreCase: retorna vazio quando não existe")
     void findByNameIgnoreCase_returnsEmpty_whenNotExists() {
-        cat("Informática");
+        newCategory("Informática");
         testEntityManager.clear();
 
         assertThat(categoryRepository.findByNameIgnoreCase("Livros")).isEmpty();
@@ -63,7 +61,7 @@ class CategoryRepositoryTest {
     @Test
     @DisplayName("findById: retorna Optional presente quando o id existe")
     void findById_returnsPresentOptional_whenIdExists() {
-        var saved = cat("Games");
+        var saved = newCategory("Games");
         testEntityManager.clear();
 
         var opt = categoryRepository.findById(saved.getId());
@@ -76,7 +74,7 @@ class CategoryRepositoryTest {
     @Test
     @DisplayName("findById: retorna Optional vazio quando o id não existe")
     void findById_returnsEmptyOptional_whenIdDoesNotExist() {
-        var saved = cat("Acessórios");
+        var saved = newCategory("Acessórios");
         long missing = saved.getId() + 10_000L;
         testEntityManager.clear();
 
@@ -86,8 +84,8 @@ class CategoryRepositoryTest {
     @Test
     @DisplayName("findById: traduz IllegalArgumentException para InvalidDataAccessApiUsageException quando id é null")
     void findById_throwsInvalidDataAccessApiUsageException_whenIdIsNull() {
-        var ex = assertThrows(InvalidDataAccessApiUsageException.class, () -> categoryRepository.findById(null));
-        assertThat(ex.getMostSpecificCause())
+        var exception = assertThrows(InvalidDataAccessApiUsageException.class, () -> categoryRepository.findById(null));
+        assertThat(exception.getMostSpecificCause())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must not be null");
     }
@@ -95,7 +93,7 @@ class CategoryRepositoryTest {
     @Test
     @DisplayName("save: lança DataIntegrityViolationException quando 'name' viola unique constraint")
     void save_throwsDataIntegrityViolation_whenNameIsDuplicated() {
-        cat("Únicos");
+        newCategory("Únicos");
         var dup = new Category();
         dup.setName("Únicos");
 

@@ -8,7 +8,6 @@ import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.impl.CategoryServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,33 +30,34 @@ import static org.springframework.test.util.ReflectionTestUtils.setField;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceImplTest {
 
-    @Mock private CategoryRepository categoryRepository;
-    @InjectMocks private CategoryServiceImpl service;
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @InjectMocks
+    private CategoryServiceImpl categoryServiceImpl;
 
     private static Category newCategory(String name) {
-        Category c = new Category();
-        c.setName(name);
-        return c;
+        return new Category(name);
     }
 
-    private static Category withId(Category c, long id) {
-        setField(c, "id", id);
-        return c;
+    private static Category withId(Category category, long id) {
+        setField(category, "id", id);
+        return category;
     }
 
     @Test
     @DisplayName("create: salva e retorna entidade (id preenchido)")
     void create_persists_and_returns_entity() {
-        var dto = new CategoryPostDTO("Eletrônicos");
+        var categoryPostDTO = new CategoryPostDTO("Eletrônicos");
 
         given(categoryRepository.saveAndFlush(any(Category.class)))
                 .willAnswer(inv -> {
-                    Category c = inv.getArgument(0);
-                    withId(c, 10L);
-                    return c;
+                    Category category = inv.getArgument(0);
+                    withId(category, 10L);
+                    return category;
                 });
 
-        Category out = service.create(dto);
+        Category out = categoryServiceImpl.create(categoryPostDTO);
 
         assertThat(out.getId()).isEqualTo(10L);
         assertThat(out.getName()).isEqualTo("Eletrônicos");
@@ -67,11 +67,11 @@ class CategoryServiceImplTest {
     @Test
     @DisplayName("create: lança DuplicateEntryException quando violar unicidade")
     void create_throwsDuplicateEntry_onConstraint() {
-        var dto = new CategoryPostDTO("Eletrônicos");
+        var categoryPostDTO = new CategoryPostDTO("Eletrônicos");
         given(categoryRepository.saveAndFlush(any(Category.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThrows(DuplicateEntryException.class, () -> service.create(dto));
+        assertThrows(DuplicateEntryException.class, () -> categoryServiceImpl.create(categoryPostDTO));
     }
 
     @Test
@@ -79,22 +79,21 @@ class CategoryServiceImplTest {
     void findById_behaviour() {
         Category existing = withId(newCategory("Games"), 5L);
 
-        // mocka o que o service realmente usa hoje
         given(categoryRepository.findById(5L)).willReturn(Optional.of(existing));
         given(categoryRepository.findById(9999L)).willReturn(Optional.empty());
 
-        assertThat(service.findById(5L).getName()).isEqualTo("Games");
-        assertThrows(ResourceNotFoundException.class, () -> service.findById(9999L));
+        assertThat(categoryServiceImpl.findById(5L).getName()).isEqualTo("Games");
+        assertThrows(ResourceNotFoundException.class, () -> categoryServiceImpl.findById(9999L));
     }
 
     @Test
     @DisplayName("listAll: pagina e mapeia para CategoryDetailsDTO")
     void listAll_pages_to_dto() {
-        Category c = withId(newCategory("Livros"), 1L);
-        Page<Category> page = new PageImpl<>(List.of(c), PageRequest.of(0, 1), 2);
+        Category category = withId(newCategory("Livros"), 1L);
+        Page<Category> page = new PageImpl<>(List.of(category), PageRequest.of(0, 1), 2);
         given(categoryRepository.findAll(any(Pageable.class))).willReturn(page);
 
-        Page<CategoryDetailsDTO> out = service.listAll(PageRequest.of(0, 1));
+        Page<CategoryDetailsDTO> out = categoryServiceImpl.listAll(PageRequest.of(0, 1));
 
         assertThat(out.getTotalElements()).isEqualTo(2);
         assertThat(out.getContent()).hasSize(1);
@@ -108,8 +107,8 @@ class CategoryServiceImplTest {
         given(categoryRepository.getReferenceById(3L)).willReturn(managed);
         given(categoryRepository.save(any(Category.class))).willAnswer(inv -> inv.getArgument(0));
 
-        var dto = new CategoryPostDTO("  Novo  ");
-        CategoryDetailsDTO out = service.update(3L, dto);
+        var categoryPostDTO = new CategoryPostDTO("  Novo  ");
+        CategoryDetailsDTO out = categoryServiceImpl.update(3L, categoryPostDTO);
 
         assertThat(out.id()).isEqualTo(3L);
         assertThat(out.name()).isEqualTo("Novo");
@@ -124,7 +123,7 @@ class CategoryServiceImplTest {
         long missingId = 123L;
         given(categoryRepository.findById(missingId)).willReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.delete(missingId));
+        assertThrows(ResourceNotFoundException.class, () -> categoryServiceImpl.delete(missingId));
         verify(categoryRepository, never()).delete(any(Category.class));
     }
 
@@ -132,27 +131,27 @@ class CategoryServiceImplTest {
     @DisplayName("deleteShouldDoNothingWhenIdExists")
     void deleteShouldDoNothingWhenIdExists() {
         long existingId = 7L;
-        Category entity = withId(newCategory("Existente"), existingId);
-        given(categoryRepository.findById(existingId)).willReturn(Optional.of(entity));
-        doNothing().when(categoryRepository).delete(entity);
+        Category category = withId(newCategory("Existente"), existingId);
+        given(categoryRepository.findById(existingId)).willReturn(Optional.of(category));
+        doNothing().when(categoryRepository).delete(category);
 
-        CategoryDetailsDTO dto = service.delete(existingId);
+        CategoryDetailsDTO dto = categoryServiceImpl.delete(existingId);
 
         assertThat(dto.id()).isEqualTo(existingId);
         assertThat(dto.name()).isEqualTo("Existente");
-        verify(categoryRepository).delete(entity);
+        verify(categoryRepository).delete(category);
     }
 
     @Test
     @DisplayName("deleteShouldThrowDatabaseExceptionWhenDependentID")
     void deleteShouldThrowDatabaseExceptionWhenDependentID() {
         long dependentId = 9L;
-        Category entity = withId(newCategory("UsadaEmProduto"), dependentId);
-        given(categoryRepository.findById(dependentId)).willReturn(Optional.of(entity));
+        Category category = withId(newCategory("UsadaEmProduto"), dependentId);
+        given(categoryRepository.findById(dependentId)).willReturn(Optional.of(category));
         doThrow(new DataIntegrityViolationException("FK violation"))
-                .when(categoryRepository).delete(entity);
+                .when(categoryRepository).delete(category);
 
-        assertThrows(DatabaseException.class, () -> service.delete(dependentId));
-        verify(categoryRepository).delete(entity);
+        assertThrows(DatabaseException.class, () -> categoryServiceImpl.delete(dependentId));
+        verify(categoryRepository).delete(category);
     }
 }

@@ -4,7 +4,6 @@ import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -29,6 +28,8 @@ import static java.lang.System.nanoTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -57,7 +58,7 @@ class CategoryControllerRestAssured {
     private String adminToken;
     private String clientToken;
 
-    private RequestSpecification base;
+    private RequestSpecification requestSpecification;
 
     @MockitoBean
     JwtDecoder jwtDecoder;
@@ -69,7 +70,7 @@ class CategoryControllerRestAssured {
                 .claim("sub", "test-user")
                 .claim("roles", List.of("ADMIN"))
                 .build();
-        Mockito.when(jwtDecoder.decode(Mockito.anyString())).thenReturn(jwt);
+        when(jwtDecoder.decode(anyString())).thenReturn(jwt);
     }
 
     @BeforeAll
@@ -77,7 +78,7 @@ class CategoryControllerRestAssured {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
-        this.base = new RequestSpecBuilder()
+        this.requestSpecification = new RequestSpecBuilder()
                 .setPort(port)
                 .build();
 
@@ -123,8 +124,8 @@ class CategoryControllerRestAssured {
 
     private String obtainTokenWithFallback(String username, String expectedRole) {
         try {
-            String t = obtainAccessToken(username, DEFAULT_PASSWORD);
-            if (hasRoleClaim(t, expectedRole)) return t;
+            String token = obtainAccessToken(username, DEFAULT_PASSWORD);
+            if (hasRoleClaim(token, expectedRole)) return token;
         } catch (Exception ignored) {
         }
         return issueJwt(username, expectedRole);
@@ -142,7 +143,7 @@ class CategoryControllerRestAssured {
 
     private Long ensureCategoryExistsAndGetId() {
         Integer size =
-                given().spec(base)
+                given().spec(requestSpecification)
                         .when().get(CATEGORIES)
                         .then().statusCode(200)
                         .extract().path("content.size()");
@@ -150,14 +151,14 @@ class CategoryControllerRestAssured {
             String name = "Category-" + nanoTime();
             return createCategoryAndReturnId(name);
         }
-        return given().spec(base)
+        return given().spec(requestSpecification)
                 .when().get(CATEGORIES)
                 .then().statusCode(200)
                 .extract().jsonPath().getLong("content[0].id");
     }
 
     private Long createCategoryAndReturnId(String name) {
-        return given().spec(base)
+        return given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .body(categoryPayload(name))
@@ -174,7 +175,7 @@ class CategoryControllerRestAssured {
 
     @Test
     void findAllShouldReturnOkWhenNoArgumentsGiven() {
-        given().spec(base)
+        given().spec(requestSpecification)
                 .when()
                 .get(CATEGORIES)
                 .then()
@@ -186,7 +187,7 @@ class CategoryControllerRestAssured {
 
     @Test
     void findAllShouldRespectPaginationParams() {
-        given().spec(base)
+        given().spec(requestSpecification)
                 .queryParam("page", 0)
                 .queryParam("size", 5)
                 .when()
@@ -202,7 +203,7 @@ class CategoryControllerRestAssured {
     void findByIdShouldReturnCategoryWhenIdExists() {
         Long existingId = ensureCategoryExistsAndGetId();
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .pathParam("id", existingId)
                 .when()
                 .get(CATEGORIES + "/{id}")
@@ -217,7 +218,7 @@ class CategoryControllerRestAssured {
     void findByIdShouldReturnNotFoundWhenIdDoesNotExist() {
         long nonExistingId = 999_999L;
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .pathParam("id", nonExistingId)
                 .when()
                 .get(CATEGORIES + "/{id}")
@@ -229,7 +230,7 @@ class CategoryControllerRestAssured {
     void createShouldReturnCreatedWhenAdminLoggedAndValidPayload() {
         String name = "Category-" + nanoTime();
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .body(categoryPayload(name))
@@ -244,7 +245,7 @@ class CategoryControllerRestAssured {
 
     @Test
     void createShouldReturnUnprocessableEntityWhenAdminLoggedAndBlankName() {
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .body(categoryPayload(""))
@@ -261,7 +262,7 @@ class CategoryControllerRestAssured {
     void createShouldReturnForbiddenWhenClientLogged() {
         String name = "Category-" + nanoTime();
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(clientToken))
                 .contentType(JSON)
                 .body(categoryPayload(name))
@@ -275,7 +276,7 @@ class CategoryControllerRestAssured {
     void createShouldReturnUnauthorizedWhenInvalidToken() {
         String name = "Category-" + nanoTime();
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", "Bearer INVALID.TOKEN")
                 .contentType(JSON)
                 .body(categoryPayload(name))
@@ -290,7 +291,7 @@ class CategoryControllerRestAssured {
         Long id = createCategoryAndReturnId("Category-To-Update-" + nanoTime());
         String newName = "Category-Updated-" + nanoTime();
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .pathParam("id", id)
@@ -308,7 +309,7 @@ class CategoryControllerRestAssured {
     void updateShouldReturnNotFoundWhenIdDoesNotExist() {
         long nonExistingId = 888_888L;
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .pathParam("id", nonExistingId)
@@ -323,7 +324,7 @@ class CategoryControllerRestAssured {
     void deleteShouldReturnOkWhenAdminLogged() {
         Long id = createCategoryAndReturnId("Category-To-Delete-" + nanoTime());
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .pathParam("id", id)
                 .when()
@@ -339,7 +340,7 @@ class CategoryControllerRestAssured {
     void deleteShouldReturnForbiddenWhenClientLogged() {
         Long id = createCategoryAndReturnId("Category-Delete-Forbidden-" + nanoTime());
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", bearer(clientToken))
                 .pathParam("id", id)
                 .when()
@@ -352,7 +353,7 @@ class CategoryControllerRestAssured {
     void deleteShouldReturnUnauthorizedWhenInvalidToken() {
         Long id = createCategoryAndReturnId("Category-Delete-Unauthorized-" + nanoTime());
 
-        given().spec(base)
+        given().spec(requestSpecification)
                 .header("Authorization", "Bearer INVALID.TOKEN")
                 .pathParam("id", id)
                 .when()

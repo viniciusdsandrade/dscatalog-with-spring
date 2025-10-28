@@ -64,10 +64,10 @@ public class CategoryController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryDetailsDTO> create(
-            @RequestBody @Valid CategoryPostDTO dto,
+            @RequestBody @Valid CategoryPostDTO categoryPostDTO,
             UriComponentsBuilder uriComponentsBuilder
     ) {
-        Category category = categoryService.create(dto);
+        Category category = categoryService.create(categoryPostDTO);
         URI uri = uriComponentsBuilder
                 .path("/api/v1/categories/{id}")
                 .buildAndExpand(category.getId())
@@ -78,9 +78,9 @@ public class CategoryController {
     @PutMapping(value = "/{id}")
     public ResponseEntity<CategoryDetailsDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid CategoryPostDTO dto
+            @RequestBody @Valid CategoryPostDTO categoryPostDTO
     ) {
-        CategoryDetailsDTO updatedCategory = categoryService.update(id, dto);
+        CategoryDetailsDTO updatedCategory = categoryService.update(id, categoryPostDTO);
         return ok(updatedCategory);
     }
 
