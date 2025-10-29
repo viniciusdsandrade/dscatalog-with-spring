@@ -27,4 +27,11 @@ public class UserDTO {
         this.email     = user.getEmail();
         user.getRoles().forEach(role -> this.roles.add(new RoleDTO(role)));
     }
+
+    public UserDTO(long id, String firstName, String lastName, String email) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+    }
 }
