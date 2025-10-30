@@ -2,10 +2,12 @@ package com.restful.dscatalog.service;
 
 import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
+import com.restful.dscatalog.dto.user.UserUpdateDTO;
 import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.entity.User;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
+import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.projections.UserDetailsProjection;
 import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
@@ -18,11 +20,17 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -172,6 +180,120 @@ class UserServiceImplTest {
                 .when(userRepository).saveAndFlush(any(User.class));
 
         assertThrows(DuplicateEntryException.class, () -> service.insert(dto));
+    }
+
+    @Test
+    @DisplayName("update: exige usuário autenticado")
+    void update_requiresAuthentication() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+
+        assertThrows(AuthenticationCredentialsNotFoundException.class,
+                () -> service.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
+    }
+
+    @Test
+    @DisplayName("update: nega quando requester != owner (AccessDeniedException)")
+    void update_deniesWhenNotOwner() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        setPrincipal("intruder@example.com");
+
+        assertThrows(AccessDeniedException.class,
+                () -> service.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
+    }
+
+    @Test
+    @DisplayName("update: lança ValidationException quando email é null")
+    void update_throwsWhenEmailNull() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        setPrincipal("owner@example.com");
+
+        assertThrows(ValidationException.class,
+                () -> service.update(7L, new UserUpdateDTO("X", "Y", null)));
+    }
+
+    @Test
+    @DisplayName("update: lança DuplicateEntryException quando email novo = atual (case-insensitive)")
+    void update_throwsWhenEmailSameAsCurrent() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        setPrincipal("owner@example.com");
+
+        assertThrows(DuplicateEntryException.class,
+                () -> service.update(7L, new UserUpdateDTO("X", "Y", "OWNER@EXAMPLE.COM")));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("update: lança DuplicateEntryException quando email já existe em outro id")
+    void update_throwsWhenEmailTakenByOther() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        given(userRepository.existsByEmailIgnoreCaseAndIdNot("new@mail.com", 7L)).willReturn(true);
+        setPrincipal("owner@example.com");
+
+        assertThrows(DuplicateEntryException.class,
+                () -> service.update(7L, new UserUpdateDTO("X", "Y", "new@mail.com")));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("update: sucesso com principal simples (normaliza email e salva)")
+    void update_success_withPrincipalName() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        given(userRepository.existsByEmailIgnoreCaseAndIdNot("new@mail.com", 7L)).willReturn(false);
+        given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
+        setPrincipal("owner@example.com");
+
+        UserDTO out = service.update(7L, new UserUpdateDTO("  NewFirst  ", " NewLast ", "  NEW@mail.com  "));
+
+        assertThat(out.getFirstName()).isEqualTo("NewFirst");
+        assertThat(out.getLastName()).isEqualTo("NewLast");
+        assertThat(out.getEmail()).isEqualTo("new@mail.com");
+        assertThat(existing.getEmail()).isEqualTo("new@mail.com");
+        verify(userRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("update: sucesso quando autenticado via JWT usando claim 'username'")
+    void update_success_withJwtUsernameClaim() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        given(userRepository.existsByEmailIgnoreCaseAndIdNot("john@new.com", 7L)).willReturn(false);
+        given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
+        setJwtWithUsernameClaim();
+
+        UserDTO out = service.update(7L, new UserUpdateDTO("John", "Smith", "john@new.com"));
+
+        assertThat(out.getEmail()).isEqualTo("john@new.com");
+        verify(userRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("update: falha se campos em branco forem passados para updateProfile (propaga IllegalArgumentException)")
+    void update_propagatesIllegalArgument_whenBlankFields() {
+        User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
+        given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        setPrincipal("owner@example.com");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.update(7L, new UserUpdateDTO("  ", "Y", "new@mail.com")));
+    }
+
+    private void setPrincipal(String name) {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(name, "pwd", List.of()));
+    }
+
+    private void setJwtWithUsernameClaim() {
+        Map<String, Object> headers = Map.of("alg", "none");
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", "owner@example.com");
+        Jwt jwt = new Jwt("token", Instant.now(), Instant.now().plusSeconds(3600), headers, claims);
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt, List.of(), "ignoredPrincipalName"));
     }
 
     private record ProjectionStub(String username, String password, Long roleId, String authority)
