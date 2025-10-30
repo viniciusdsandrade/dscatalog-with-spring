@@ -1,7 +1,10 @@
 package com.restful.dscatalog.service;
 
 import com.restful.dscatalog.dto.user.UserDTO;
+import com.restful.dscatalog.dto.user.UserInsertDTO;
+import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.entity.User;
+import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.projections.UserDetailsProjection;
 import com.restful.dscatalog.repository.RoleRepository;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,6 +120,59 @@ class UserServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> service.findById(999L));
     }
 
+    @Test
+    @DisplayName("insert: normaliza email, encripta senha, associa ROLE_CLIENT e salva")
+    void insert_persistsWithNormalizationAndRole() {
+        var dto = new UserInsertDTO(
+                "  Alice  ", "  Doe  ", "  Alice@Example.COM  ", "plain"
+        );
+        String normalized = "alice@example.com";
+
+        given(userRepository.findByEmail(normalized)).willReturn(Optional.empty());
+        given(passwordEncoder.encode("plain")).willReturn("ENC");
+        given(roleRepository.getReferenceById(2L)).willReturn(new Role(2L, "ROLE_CLIENT"));
+        final ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        doAnswer(inv -> {
+            User e = inv.getArgument(0);
+            withId(e, 42L);
+            return null;
+        }).when(userRepository).saveAndFlush(captor.capture());
+
+        UserDTO out = service.insert(dto);
+
+        assertThat(out.getId()).isEqualTo(42L);
+        User saved = captor.getValue();
+        assertThat(saved.getEmail()).isEqualTo(normalized);
+        assertThat(saved.getPassword()).isEqualTo("ENC");
+        assertThat(saved.getRoles()).extracting("authority")
+                .containsExactly("ROLE_CLIENT");
+        verify(roleRepository).getReferenceById(2L);
+        verify(passwordEncoder).encode("plain");
+        verify(userRepository).saveAndFlush(any(User.class));
+    }
+
+    @Test
+    @DisplayName("insert: pré-checagem de duplicidade dispara DuplicateEntryException")
+    void insert_precheckDuplicate_throws() {
+        given(userRepository.findByEmail("x@y.com")).willReturn(Optional.of(new User()));
+        var dto = new UserInsertDTO("A", "B", "x@y.com", "pwd");
+
+        assertThrows(DuplicateEntryException.class, () -> service.insert(dto));
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("insert: DataIntegrityViolationException mapeada para DuplicateEntryException")
+    void insert_violation_mappedToDuplicate() {
+        var dto = new UserInsertDTO("A", "B", "X@Y.com", "pwd");
+        given(userRepository.findByEmail("x@y.com")).willReturn(Optional.empty());
+        given(roleRepository.getReferenceById(2L)).willReturn(new Role(2L, "ROLE_CLIENT"));
+        given(passwordEncoder.encode("pwd")).willReturn("ENC");
+        doThrow(new DataIntegrityViolationException("uk_email"))
+                .when(userRepository).saveAndFlush(any(User.class));
+
+        assertThrows(DuplicateEntryException.class, () -> service.insert(dto));
+    }
 
     private record ProjectionStub(String username, String password, Long roleId, String authority)
             implements UserDetailsProjection {
