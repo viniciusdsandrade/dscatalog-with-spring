@@ -51,6 +51,10 @@ public class User implements UserDetails {
     @ManyToMany(fetch = LAZY)
     private Set<Role> roles = new HashSet<>();
 
+    public User(String first, String last, String email, String h) {
+        initializeProfile(first, last, email, h);
+    }
+
     public void initializeProfile(String firstName, String lastName, String normalizedEmail, String passwordHash) {
         this.firstName = requireNonBlank(firstName, "firstName");
         this.lastName = requireNonBlank(lastName, "lastName");
