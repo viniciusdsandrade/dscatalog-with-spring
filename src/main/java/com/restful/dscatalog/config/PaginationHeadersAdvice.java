@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import static org.springframework.http.HttpHeaders.LINK;
+
 @RestControllerAdvice
 public class PaginationHeadersAdvice implements ResponseBodyAdvice<Object> {
 
@@ -35,7 +37,6 @@ public class PaginationHeadersAdvice implements ResponseBodyAdvice<Object> {
     ) {
         if (!(body instanceof Page<?> page)) return body;
 
-        // X-headers básicos
         HttpHeaders headers = response.getHeaders();
         headers.set("X-Page-Number", String.valueOf(page.getNumber()));
         headers.set("X-Page-Size", String.valueOf(page.getSize()));
@@ -44,7 +45,7 @@ public class PaginationHeadersAdvice implements ResponseBodyAdvice<Object> {
         if (page.getTotalPages() > 0) {
             String link = buildLinkHeader(request, page);
             if (!link.isEmpty()) {
-                headers.set(HttpHeaders.LINK, link);
+                headers.set(LINK, link);
             }
         }
 
