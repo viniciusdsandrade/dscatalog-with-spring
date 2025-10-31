@@ -10,23 +10,23 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.StringJoiner;
 
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import static com.nimbusds.jose.JWSAlgorithm.HS256;
 import static com.restful.dscatalog.TokenUtil.obtainAccessToken;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static java.lang.System.nanoTime;
+import static java.time.Instant.now;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -122,7 +122,6 @@ class ProductControllerRestAssured {
             String name,
             String description,
             double price,
-            String imgUrl,
             String isoDate,
             List<Long> categoryIds
     ) {
@@ -140,7 +139,7 @@ class ProductControllerRestAssured {
                 name,
                 description,
                 String.valueOf(price),
-                (imgUrl == null ? null : "\"" + imgUrl + "\""),
+                null,
                 isoDate,
                 categories
         );
@@ -150,7 +149,6 @@ class ProductControllerRestAssured {
             String name,
             String description,
             double price,
-            String imgUrl,
             List<String> categoryNames
     ) {
         String names = jsonArrayOfStrings(categoryNames);
@@ -166,14 +164,14 @@ class ProductControllerRestAssured {
                 name,
                 description,
                 String.valueOf(price),
-                (imgUrl == null ? null : "\"" + imgUrl + "\""),
+                null,
                 names
         );
     }
 
     private static String issueJwt(String subjectEmail, String... roles) {
         try {
-            var now = Instant.now();
+            var now = now();
             var claims = new JWTClaimsSet.Builder()
                     .issuer(ISSUER)
                     .subject(subjectEmail)
@@ -181,7 +179,7 @@ class ProductControllerRestAssured {
                     .expirationTime(Date.from(now.plus(1, ChronoUnit.HOURS)))
                     .claim("roles", roles)
                     .build();
-            var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+            var jwt = new SignedJWT(new JWSHeader(HS256), claims);
             jwt.sign(new MACSigner(TEST_SECRET));
             return jwt.serialize();
         } catch (Exception e) {
@@ -217,22 +215,36 @@ class ProductControllerRestAssured {
                         .extract().path("content.size()");
         if (size == null || size == 0) {
             String name = "Product-" + nanoTime();
-            return createProductAndReturnIdUsingPostDTO(name, "Desc " + name, 99.9, null, nowIsoSeconds(), List.of());
+            return createProductAndReturnIdUsingPostDTO(
+                    name,
+                    "Desc " + name,
+                    99.9,
+                    nowIsoSeconds(),
+                    List.of()
+            );
         }
         return given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
-                .when().get(PRODUCTS)
-                .then().statusCode(200)
-                .extract().jsonPath().getLong("content[0].id");
+                .when()
+                .get(PRODUCTS)
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getLong("content[0].id");
     }
 
     private Long createProductAndReturnIdUsingPostDTO(
-            String name, String description, double price, String imgUrl, String isoDate, List<Long> categoryIds
+            String name,
+            String description,
+            double price,
+            String isoDate,
+            List<Long> categoryIds
     ) {
         return given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
-                .body(productPayload(name, description, price, imgUrl, isoDate, categoryIds))
+                .body(productPayload(name, description, price, isoDate, categoryIds))
                 .when()
                 .post(PRODUCTS)
                 .then()
@@ -243,28 +255,6 @@ class ProductControllerRestAssured {
                 .extract()
                 .jsonPath().getLong("id");
     }
-
-    private Long createProductAndReturnIdByNames(
-            String name, String description, double price, String imgUrl, List<String> categoryNames
-    ) {
-        return given().spec(requestSpecification)
-                .header("Authorization", bearer(adminToken))
-                .contentType(JSON)
-                .body(productByNamesPayload(name, description, price, imgUrl, categoryNames))
-                .when()
-                .post(PRODUCTS + "/by-names")
-                .then()
-                .statusCode(201)
-                .contentType(JSON)
-                .body("id", notNullValue())
-                .body("name", equalTo(name))
-                .extract()
-                .jsonPath().getLong("id");
-    }
-
-    // =============================
-    // =====        GET        =====
-    // =============================
 
     @Test
     void findAllShouldReturnOkWhenNoArgumentsGiven() {
@@ -282,7 +272,6 @@ class ProductControllerRestAssured {
                 .body("content.size()", greaterThanOrEqualTo(0));
     }
 
-
     @Test
     void findAllShouldRespectPaginationParamsAndHeaders() {
         given().spec(requestSpecification)
@@ -299,7 +288,6 @@ class ProductControllerRestAssured {
                 .body("$", hasKey("content"))
                 .body("content.size()", lessThanOrEqualTo(5));
     }
-
 
     @Test
     void findAllWithoutPaginationShouldReturnList() {
@@ -351,7 +339,7 @@ class ProductControllerRestAssured {
         given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
-                .body(productPayload(name, "Desc " + name, 123.45, null, nowIsoSeconds(), List.of()))
+                .body(productPayload(name, "Desc " + name, 123.45, nowIsoSeconds(), List.of()))
                 .when()
                 .post(PRODUCTS)
                 .then()
@@ -372,7 +360,6 @@ class ProductControllerRestAssured {
                         name,
                         "Desc " + name,
                         77.7,
-                        null,
                         List.of("  ELETRONICOS  ", "informatica", "Informatica")
                 ))
                 .when()
@@ -387,11 +374,10 @@ class ProductControllerRestAssured {
 
     @Test
     void createShouldReturnBadRequestWhenAdminLoggedAndInvalidPayload() {
-        // nome em branco e price = 0 devem falhar na validação
         given().spec(requestSpecification)
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
-                .body(productPayload("", "", 0.0, null, nowIsoSeconds(), List.of()))
+                .body(productPayload("", "", 0.0, nowIsoSeconds(), List.of()))
                 .when()
                 .post(PRODUCTS)
                 .then()
@@ -406,7 +392,7 @@ class ProductControllerRestAssured {
         given().spec(requestSpecification)
                 .header("Authorization", bearer(clientToken))
                 .contentType(JSON)
-                .body(productPayload(name, "Desc " + name, 55.5, null, nowIsoSeconds(), List.of()))
+                .body(productPayload(name, "Desc " + name, 55.5, nowIsoSeconds(), List.of()))
                 .when()
                 .post(PRODUCTS)
                 .then()
@@ -420,7 +406,7 @@ class ProductControllerRestAssured {
         given().spec(requestSpecification)
                 .header("Authorization", "Bearer INVALID.TOKEN")
                 .contentType(JSON)
-                .body(productPayload(name, "Desc " + name, 55.5, null, nowIsoSeconds(), List.of()))
+                .body(productPayload(name, "Desc " + name, 55.5, nowIsoSeconds(), List.of()))
                 .when()
                 .post(PRODUCTS)
                 .then()
@@ -434,7 +420,7 @@ class ProductControllerRestAssured {
         given().spec(requestSpecification)
                 .header("Authorization", "Bearer INVALID.TOKEN")
                 .contentType(JSON)
-                .body(productByNamesPayload(name, "Desc " + name, 10.0, null, List.of("informatica")))
+                .body(productByNamesPayload(name, "Desc " + name, 10.0, List.of("informatica")))
                 .when()
                 .post(PRODUCTS + "/by-names")
                 .then()
@@ -447,7 +433,6 @@ class ProductControllerRestAssured {
                 "Product-To-Update-" + nanoTime(),
                 "Desc",
                 10.0,
-                null,
                 nowIsoSeconds(),
                 List.of()
         );
@@ -457,7 +442,7 @@ class ProductControllerRestAssured {
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .pathParam("id", id)
-                .body(productPayload(newName, "New Desc", 99.99, null, nowIsoSeconds(), List.of()))
+                .body(productPayload(newName, "New Desc", 99.99, nowIsoSeconds(), List.of()))
                 .when()
                 .put(PRODUCTS + "/{id}")
                 .then()
@@ -475,7 +460,7 @@ class ProductControllerRestAssured {
                 .header("Authorization", bearer(adminToken))
                 .contentType(JSON)
                 .pathParam("id", nonExistingId)
-                .body(productPayload("Whatever", "Desc", 1.0, null, nowIsoSeconds(), List.of()))
+                .body(productPayload("Whatever", "Desc", 1.0, nowIsoSeconds(), List.of()))
                 .when()
                 .put(PRODUCTS + "/{id}")
                 .then()
@@ -488,7 +473,6 @@ class ProductControllerRestAssured {
                 "Product-To-Delete-" + nanoTime(),
                 "Desc",
                 10.0,
-                null,
                 nowIsoSeconds(),
                 List.of()
         );
@@ -511,7 +495,6 @@ class ProductControllerRestAssured {
                 "Product-Delete-Forbidden-" + nanoTime(),
                 "Desc",
                 10.0,
-                null,
                 nowIsoSeconds(),
                 List.of()
         );
@@ -531,7 +514,6 @@ class ProductControllerRestAssured {
                 "Product-Delete-Unauthorized-" + nanoTime(),
                 "Desc",
                 10.0,
-                null,
                 nowIsoSeconds(),
                 List.of()
         );
