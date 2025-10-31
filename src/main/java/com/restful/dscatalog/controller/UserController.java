@@ -32,7 +32,11 @@ public class UserController {
     @PermitAll
     public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable) {
         Page<UserDTO> users = userService.findAllPaged(pageable);
-        return ok(users);
+        return ResponseEntity.ok()
+                .header("X-Page-Number", String.valueOf(users.getNumber()))
+                .header("X-Page-Size", String.valueOf(users.getSize()))
+                .header("X-Total-Count", String.valueOf(users.getTotalElements()))
+                .body(users);
     }
 
     @GetMapping(value = "/{id}")

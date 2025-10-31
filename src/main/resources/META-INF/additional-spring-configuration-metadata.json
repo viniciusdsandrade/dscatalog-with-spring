@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "security.test.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Description for security.test.jwt.secret."
+    },
+    {
+      "name": "security.test.jwt.issuer",
+      "type": "java.lang.String",
+      "description": "Description for security.test.jwt.issuer."
+    }
+  ] }

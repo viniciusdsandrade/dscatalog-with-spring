@@ -12,7 +12,6 @@ import com.restful.dscatalog.projections.UserDetailsProjection;
 import com.restful.dscatalog.repository.RoleRepository;
 import com.restful.dscatalog.repository.UserRepository;
 import com.restful.dscatalog.service.UserService;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -27,6 +26,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -66,12 +66,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<UserDTO> findAllPaged(Pageable pageable) {
         Page<User> list = userRepository.findAll(pageable);
         return list.map(UserDTO::new);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDTO findById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
