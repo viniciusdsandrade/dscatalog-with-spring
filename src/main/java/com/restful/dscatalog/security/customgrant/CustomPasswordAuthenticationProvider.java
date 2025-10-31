@@ -32,6 +32,8 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.util.Assert;
 
+import static java.util.Objects.requireNonNull;
+
 public record CustomPasswordAuthenticationProvider(
         OAuth2AuthorizationService authorizationService,
         OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator,
@@ -70,7 +72,7 @@ public record CustomPasswordAuthenticationProvider(
 
         Set<String> authorizedScopes = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(scope -> registeredClient.getScopes().contains(scope))
+                .filter(scope -> requireNonNull(registeredClient).getScopes().contains(scope))
                 .collect(Collectors.toSet());
 
         //-----------Create a new Security Context Holder Context----------
@@ -91,7 +93,7 @@ public record CustomPasswordAuthenticationProvider(
                 .authorizationGrantType(new AuthorizationGrantType("password"))
                 .authorizationGrant(customPasswordAuthenticationToken);
 
-        OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
+        OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(requireNonNull(registeredClient))
                 .attribute(Principal.class.getName(), clientPrincipal)
                 .principalName(clientPrincipal.getName())
                 .authorizationGrantType(new AuthorizationGrantType("password"))

@@ -7,6 +7,8 @@ import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import static lombok.AccessLevel.NONE;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -17,7 +19,7 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String email;
-    @Setter(AccessLevel.NONE)
+    @Setter(NONE)
     private Set<RoleDTO> roles = new HashSet<>();
 
     public UserDTO(User user) {

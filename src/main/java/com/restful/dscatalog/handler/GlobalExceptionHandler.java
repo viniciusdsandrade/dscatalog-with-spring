@@ -189,7 +189,6 @@ public class GlobalExceptionHandler {
 
     private static String pathOf(WebRequest req) {
         String d = req.getDescription(false);
-        if (d == null) return null;
         int i = d.indexOf("uri=");
         return (i >= 0 ? d.substring(i + 4) : d);
     }
