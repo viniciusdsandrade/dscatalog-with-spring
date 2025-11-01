@@ -6,7 +6,6 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Schema(name = "DadosCadastroProdutoPorNome")
 public record ProductPostByNameDTO(
         @NotBlank(message = "name é obrigatório")
         String name,

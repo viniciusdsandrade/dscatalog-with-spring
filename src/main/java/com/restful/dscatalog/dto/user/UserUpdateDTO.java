@@ -16,4 +16,5 @@ public record UserUpdateDTO(
         @Email(message = "Email must be valid")
         @Size(max = 120)
         String email
-) { }
+) {
+}
