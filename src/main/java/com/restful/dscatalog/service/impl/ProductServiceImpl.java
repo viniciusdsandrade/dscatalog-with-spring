@@ -13,7 +13,7 @@ import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.repository.ProductRepository;
 import com.restful.dscatalog.service.ProductService;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -30,6 +30,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.lang.Character.toUpperCase;
+import static java.time.LocalDateTime.now;
+import static java.util.stream.Collectors.toMap;
 
 @Service("productService")
 public class ProductServiceImpl implements ProductService {
@@ -77,34 +81,38 @@ public class ProductServiceImpl implements ProductService {
                     productPostByNameDTO.imgUrl(),
                     productPostByNameDTO.date() != null
                             ? productPostByNameDTO.date()
-                            : LocalDateTime.now(), product
+                            : now(), product
             );
 
             applyCategoriesByNames(productPostByNameDTO.categoryNames(), product);
             productRepository.saveAndFlush(product);
             return product;
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new DuplicateEntryException("Entrada duplicada para Produto.");
         }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Product findById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
     }
 
     @Override
-    public Page<ProductDetailsDTO> listAll(Pageable paginacao) {
-        Page<Product> page = productRepository.findAll(paginacao);
+    @Transactional(readOnly = true)
+    public Page<ProductDetailsDTO> listAll(Pageable pageable) {
+        Page<Product> page = productRepository.findAll(pageable);
         if (page.isEmpty()) return page.map(ProductDetailsDTO::new);
 
-        List<Long> ids = page.stream().map(Product::getId).toList();
+        List<Long> ids = page.stream()
+                .map(Product::getId)
+                .toList();
 
         List<Product> fetched = productRepository.findAllWithCategoriesByIdIn(ids);
 
         Map<Long, Product> byIdHydrated = fetched.stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .collect(toMap(Product::getId, p -> p));
 
         return page.map(p -> {
             Product product = byIdHydrated.getOrDefault(p.getId(), p);
@@ -130,21 +138,31 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public @Valid ProductDetailsDTO update(Long id, @Valid ProductPostDTO productPostDTO) {
-        Product product = productRepository.getReferenceById(id);
+        try {
+            Product product = productRepository.getReferenceById(id);
 
-        applyScalarFields(
-                productPostDTO.name(),
-                productPostDTO.description(),
-                productPostDTO.price(),
-                productPostDTO.imgUrl(),
-                productPostDTO.date(),
-                product
-        );
+            applyScalarFields(
+                    productPostDTO.name(),
+                    productPostDTO.description(),
+                    productPostDTO.price(),
+                    productPostDTO.imgUrl(),
+                    productPostDTO.date(),
+                    product
+            );
 
-        if (productPostDTO.categoryIds() != null) applyCategoriesByIds(productPostDTO.categoryIds(), product);
+            if (productPostDTO.categoryIds() != null)
+                applyCategoriesByIds(productPostDTO.categoryIds(), product);
 
-        productRepository.save(product);
-        return new ProductDetailsDTO(product);
+            try {
+                productRepository.save(product);
+            } catch (DataIntegrityViolationException e) {
+                throw new DuplicateEntryException("Entrada duplicada para Produto.");
+            }
+
+            return new ProductDetailsDTO(product);
+        } catch (EntityNotFoundException e) {
+            throw new ResourceNotFoundException("Product not found: " + id);
+        }
     }
 
     @Transactional
@@ -171,9 +189,9 @@ public class ProductServiceImpl implements ProductService {
             Product entity
     ) {
         if (name != null) entity.setName(name.trim());
-        if (description != null) entity.setDescription(description);
+        if (description != null) entity.setDescription(description.trim());
         if (price != null) entity.setPrice(BigDecimal.valueOf(price));
-        if (imgUrl != null) entity.setImgUrl(imgUrl);
+        if (imgUrl != null) entity.setImgUrl(imgUrl.trim());
         if (date != null) entity.setDate(date);
     }
 
@@ -226,6 +244,6 @@ public class ProductServiceImpl implements ProductService {
     private static String capitalize(String string) {
         if (string == null || string.isEmpty()) return string;
         if (string.length() == 1) return string.toUpperCase();
-        return Character.toUpperCase(string.charAt(0)) + string.substring(1);
+        return toUpperCase(string.charAt(0)) + string.substring(1);
     }
 }

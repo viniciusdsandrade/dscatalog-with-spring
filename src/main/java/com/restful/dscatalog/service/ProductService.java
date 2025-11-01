@@ -4,20 +4,20 @@ import com.restful.dscatalog.dto.product.ProductPostDTO;
 import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
 import com.restful.dscatalog.entity.Product;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 public interface ProductService {
 
     @Transactional
-    Product create(@Valid ProductPostDTO dto);
+    Product create(@Valid ProductPostDTO productPostDTO);
 
     @Transactional
-    Product createByCategoryNames(ProductPostByNameDTO dto);
+    Product createByCategoryNames(ProductPostByNameDTO productPostByNameDTO);
 
     Product findById(Long id);
 
@@ -27,7 +27,7 @@ public interface ProductService {
 
     @Transactional
     @Valid
-    ProductDetailsDTO update(Long id, @Valid ProductPostDTO dto);
+    ProductDetailsDTO update(Long id, @Valid ProductPostDTO productPostDTO);
 
     @Transactional
     ProductDetailsDTO delete(Long id);
