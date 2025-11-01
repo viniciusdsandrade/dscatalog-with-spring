@@ -3,7 +3,7 @@ package com.restful.dscatalog.handler;
 import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ValidationException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
-import org.hibernate.TypeMismatchException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.persistence.EntityNotFoundException;
@@ -124,6 +124,7 @@ public class GlobalExceptionHandler {
         String message = (ex.getError() != null && ex.getError().getDescription() != null)
                 ? ex.getError().getDescription()
                 : "Falha de autenticação OAuth2.";
+
         String code = (ex.getError() != null && ex.getError().getErrorCode() != null)
                 ? ex.getError().getErrorCode().toUpperCase()
                 : "OAUTH2_AUTHENTICATION_ERROR";
@@ -149,18 +150,18 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ErrorDetails> handleAccessDenied(WebRequest webRequest) {
+    public ResponseEntity<List<ErrorDetails>> handleAccessDenied(WebRequest webRequest) {
         ErrorDetails err = new ErrorDetails(
                 now(),
-                "Acesso negado: permissão insuficiente.",
-                pathOf(webRequest),
+                htmlEscape("Acesso negado: permissão insuficiente."),
+                htmlEscape(webRequest.getDescription(false)),
                 "ACCESS_DENIED"
         );
-        return ResponseEntity.status(FORBIDDEN).body(err);
+        return ResponseEntity.status(FORBIDDEN).body(List.of(err));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorDetails> handleGlobalException(
+    public ResponseEntity<List<ErrorDetails>> handleGlobalException(
             Exception exception,
             WebRequest webRequest
     ) {
@@ -170,7 +171,7 @@ public class GlobalExceptionHandler {
                 htmlEscape(webRequest.getDescription(false)),
                 "INTERNAL_SERVER_ERROR"
         );
-        return new ResponseEntity<>(errorDetails, INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(List.of(errorDetails), INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(ValidationException.class)
@@ -185,11 +186,5 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR"
         );
         return new ResponseEntity<>(List.of(errorDetails), BAD_REQUEST);
-    }
-
-    private static String pathOf(WebRequest req) {
-        String d = req.getDescription(false);
-        int i = d.indexOf("uri=");
-        return (i >= 0 ? d.substring(i + 4) : d);
     }
 }
