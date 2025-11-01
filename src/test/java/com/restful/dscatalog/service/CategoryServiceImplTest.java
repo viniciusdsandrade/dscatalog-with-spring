@@ -52,10 +52,11 @@ class CategoryServiceImplTest {
 
         given(categoryRepository.saveAndFlush(any(Category.class)))
                 .willAnswer(inv -> {
-                    Category category = inv.getArgument(0);
-                    withId(category, 10L);
-                    return category;
-                });
+                            Category category = inv.getArgument(0);
+                            withId(category, 10L);
+                            return category;
+                        }
+                );
 
         Category out = categoryServiceImpl.create(categoryPostDTO);
 
@@ -104,7 +105,7 @@ class CategoryServiceImplTest {
     @DisplayName("update: altera nome (trim aplicado) e devolve DTO")
     void update_updates_name_and_returns_dto() {
         Category managed = withId(newCategory(" Antigo "), 3L);
-        given(categoryRepository.getReferenceById(3L)).willReturn(managed);
+        given(categoryRepository.findById(3L)).willReturn(java.util.Optional.of(managed));
         given(categoryRepository.save(any(Category.class))).willAnswer(inv -> inv.getArgument(0));
 
         var categoryPostDTO = new CategoryPostDTO("  Novo  ");
@@ -115,7 +116,6 @@ class CategoryServiceImplTest {
         assertThat(managed.getName()).isEqualTo("Novo");
         verify(categoryRepository).save(managed);
     }
-
 
     @Test
     @DisplayName("deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist")

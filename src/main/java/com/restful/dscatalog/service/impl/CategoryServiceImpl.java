@@ -8,7 +8,7 @@ import com.restful.dscatalog.exception.DuplicateEntryException;
 import com.restful.dscatalog.exception.ResourceNotFoundException;
 import com.restful.dscatalog.repository.CategoryRepository;
 import com.restful.dscatalog.service.CategoryService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -26,9 +26,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public Category create(@Valid CategoryPostDTO category) {
+    public Category create(@Valid CategoryPostDTO categoryPostDTO) {
         try {
-            Category newCategory = new Category(category);
+            Category newCategory = new Category(categoryPostDTO);
             categoryRepository.saveAndFlush(newCategory);
             return newCategory;
         } catch (DataIntegrityViolationException e) {
@@ -43,16 +43,22 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Page<CategoryDetailsDTO> listAll(Pageable paginacao) {
-        return categoryRepository.findAll(paginacao).map(CategoryDetailsDTO::new);
+    @Transactional(readOnly = true)
+    public Page<CategoryDetailsDTO> listAll(Pageable pageable) {
+        return categoryRepository.findAll(pageable).map(CategoryDetailsDTO::new);
     }
 
     @Override
     @Transactional
-    public @Valid CategoryDetailsDTO update(Long id, CategoryPostDTO dto) {
-        Category category = categoryRepository.getReferenceById(id);
-        copyDtoToEntity(dto, category);
-        categoryRepository.save(category);
+    public @Valid CategoryDetailsDTO update(Long id, CategoryPostDTO categoryPostDTO) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+        copyDtoToEntity(categoryPostDTO, category);
+        try {
+            categoryRepository.save(category);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateEntryException("Entrada duplicada para Categoria.");
+        }
         return new CategoryDetailsDTO(category);
     }
 

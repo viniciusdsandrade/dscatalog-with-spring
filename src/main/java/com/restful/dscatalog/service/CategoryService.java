@@ -11,14 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 public interface CategoryService {
 
     @Transactional
-    Category create(CategoryPostDTO category);
+    Category create(CategoryPostDTO categoryPostDTO);
 
     Category findById(Long id);
 
-    Page<CategoryDetailsDTO> listAll(Pageable paginacao);
+    Page<CategoryDetailsDTO> listAll(Pageable pageable);
 
     @Transactional
-    CategoryDetailsDTO update(Long id, @Valid CategoryPostDTO dto);
+    CategoryDetailsDTO update(Long id, @Valid CategoryPostDTO categoryPostDTO);
 
     @Transactional
     CategoryDetailsDTO delete(Long id);
