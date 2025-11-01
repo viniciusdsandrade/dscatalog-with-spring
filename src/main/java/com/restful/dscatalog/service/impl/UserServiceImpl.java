@@ -52,13 +52,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         List<UserDetailsProjection> results = userRepository.searchUserAndRolesByEmail(username);
         if (results.isEmpty())
             throw new UsernameNotFoundException("Email not found: " + username);
-        User user = new User();
-        user.setEmail(results.getFirst().getUsername());
-        user.setPassword(results.getFirst().getPassword());
+        User user = new User(
+                results.getFirst().getUsername(),
+                results.getFirst().getPassword()
+        );
         results.forEach(projection -> user.addRole(
                 new Role(projection.getRoleId(), projection.getAuthority())
         ));
@@ -83,7 +85,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     @Transactional
     public UserDTO insert(@Valid UserInsertDTO dto) {
-        final String normalizedEmail = dto.email().trim().toLowerCase();
+        final String normalizedEmail = normalizeEmail(dto.email());
 
         if (userRepository.findByEmail(normalizedEmail).isPresent())
             throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
@@ -109,7 +111,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public UserDTO update(final Long id, final UserUpdateDTO dto) {
+    public UserDTO update(final Long id, final UserUpdateDTO userInsertDTO) {
         final User entity = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -118,13 +120,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         assertOwner(entity, requester);
 
-        final String normalizedEmail = normalizeEmail(dto.email());
+        final String normalizedEmail = normalizeEmail(userInsertDTO.email());
 
         validateEmailChange(entity, normalizedEmail, id);
 
-        entity.updateProfile(dto.firstName(), dto.lastName(), normalizedEmail);
+        entity.updateProfile(userInsertDTO.firstName(), userInsertDTO.lastName(), normalizedEmail);
         userRepository.save(entity);
 
+        return new UserDTO(entity);
+    }
+
+    @Override
+    public User authenticated() {
+        final Authentication auth = requireAuthenticated();
+        final String requester = resolveRequesterIdentity(auth);
+        return userRepository.findByEmail(requester)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Override
+    public UserDTO getMe() {
+        final Authentication auth = requireAuthenticated();
+        final String requester = resolveRequesterIdentity(auth);
+        final User entity = userRepository.findByEmail(requester)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return new UserDTO(entity);
     }
 
