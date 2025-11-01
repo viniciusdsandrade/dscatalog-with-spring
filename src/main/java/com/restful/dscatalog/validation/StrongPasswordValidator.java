@@ -6,27 +6,45 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.text.Normalizer;
 
+import static java.lang.Character.*;
+
 public class StrongPasswordValidator implements ConstraintValidator<StrongPassword, CharSequence> {
 
-    private int min;
-    private int max;
-    private boolean requireUpper;
-    private boolean requireLower;
-    private boolean requireDigit;
-    private boolean requireSpecial;
-    private boolean allowWhitespace;
-    private boolean normalizeNFKC;
+    private Policy policy;
+
+    private static final class Policy {
+        final int min;
+        final int max;
+        final boolean requireUpper;
+        final boolean requireLower;
+        final boolean requireDigit;
+        final boolean requireSpecial;
+        final boolean allowWhitespace;
+        final boolean normalizeNFKC;
+
+        Policy(StrongPassword ann) {
+            this.min = ann.min();
+            this.max = ann.max();
+            this.requireUpper = ann.requireUpper();
+            this.requireLower = ann.requireLower();
+            this.requireDigit = ann.requireDigit();
+            this.requireSpecial = ann.requireSpecial();
+            this.allowWhitespace = ann.allowWhitespace();
+            this.normalizeNFKC = ann.normalizeNFKC();
+        }
+    }
+
+    private static final class Scan {
+        boolean hasUpper;
+        boolean hasLower;
+        boolean hasDigit;
+        boolean hasSpecial;
+        boolean hasIllegalWhitespace;
+    }
 
     @Override
     public void initialize(StrongPassword ann) {
-        this.min = ann.min();
-        this.max = ann.max();
-        this.requireUpper = ann.requireUpper();
-        this.requireLower = ann.requireLower();
-        this.requireDigit = ann.requireDigit();
-        this.requireSpecial = ann.requireSpecial();
-        this.allowWhitespace = ann.allowWhitespace();
-        this.normalizeNFKC = ann.normalizeNFKC();
+        this.policy = new Policy(ann);
     }
 
     @Override
@@ -34,34 +52,51 @@ public class StrongPasswordValidator implements ConstraintValidator<StrongPasswo
         if (value == null || value.isEmpty()) return true;
 
         String s = value.toString();
-        if (normalizeNFKC) {
+        if (policy.normalizeNFKC) {
             s = Normalizer.normalize(s, Normalizer.Form.NFKC);
         }
 
         final int len = s.codePointCount(0, s.length());
-        if (len < min || len > max) return false;
+        if (len < policy.min || len > policy.max) return false;
 
-        boolean hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false, hasIllegalWS = false;
+        final Scan scan = scanCodePoints(s, policy.allowWhitespace);
 
-        for (int i = 0; i < s.length(); ) {
+        if (scan.hasIllegalWhitespace) return false;
+        if (policy.requireUpper && !scan.hasUpper) return false;
+        if (policy.requireLower && !scan.hasLower) return false;
+        if (policy.requireDigit && !scan.hasDigit) return false;
+        return !policy.requireSpecial || scan.hasSpecial;
+    }
+
+    private static Scan scanCodePoints(String s, boolean allowWhitespace) {
+        final Scan scan = new Scan();
+        for (int i = 0, n = s.length(); i < n; ) {
             final int cp = s.codePointAt(i);
-            if (Character.isUpperCase(cp)) hasUpper = true;
-            else if (Character.isLowerCase(cp)) hasLower = true;
-            else if (Character.isDigit(cp)) hasDigit = true;
-            else if (Character.isWhitespace(cp)) {
-                if (!allowWhitespace) hasIllegalWS = true;
-            } else {
-                hasSpecial = true;
+
+            switch (getType(cp)) {
+                case UPPERCASE_LETTER -> scan.hasUpper = true;
+                case LOWERCASE_LETTER -> scan.hasLower = true;
+                case DECIMAL_DIGIT_NUMBER -> scan.hasDigit = true;
+                case SPACE_SEPARATOR, LINE_SEPARATOR, PARAGRAPH_SEPARATOR -> {
+                    if (cp != 0x00A0 && cp != 0x2007 && cp != 0x202F) {
+                        if (!allowWhitespace) scan.hasIllegalWhitespace = true;
+                    } else {
+                        scan.hasSpecial = true;
+                    }
+                }
+                default -> {
+                    switch (cp) {
+                        case '\t', '\n', '\u000B', '\f', '\r',
+                             '\u001C', '\u001D', '\u001E', '\u001F' -> {
+                            if (!allowWhitespace) scan.hasIllegalWhitespace = true;
+                        }
+                        default -> scan.hasSpecial = true;
+                    }
+                }
             }
+
             i += Character.charCount(cp);
         }
-
-        if (hasIllegalWS) return false;
-        if (requireUpper && !hasUpper) return false;
-        if (requireLower && !hasLower) return false;
-        if (requireDigit && !hasDigit) return false;
-        if (requireSpecial && !hasSpecial) return false;
-
-        return true;
+        return scan;
     }
 }
