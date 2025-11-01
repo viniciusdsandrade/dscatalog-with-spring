@@ -48,6 +48,14 @@ SELECT 'Patricia', 'Gomes', 'patricia@dscatalog.com', '$2a$10$eACCYoNOHEqXve8aIW
 FROM (SELECT 1) x
 WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'patricia@dscatalog.com');
 
+INSERT INTO tb_user (first_name, last_name, email, password)
+SELECT 'Vinícius',
+       'Andrade',
+       'vinicius_andrade2010@hotmail.com',
+       '$2a$10$YXAZx7Pmio.awFvF.Zdh5ObohVRx/SCJ4rB7LPx5A2qNsIp2L0VYa'
+FROM (SELECT 1) x
+WHERE NOT EXISTS (SELECT 1 FROM tb_user WHERE email = 'vinicius_andrade2010@hotmail.com');
+
 INSERT INTO tb_user_role (user_id, role_id)
 SELECT u.id, r.id
 FROM tb_user u
@@ -138,6 +146,22 @@ SELECT u.id, r.id
 FROM tb_user u
          JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
 WHERE u.email = 'patricia@dscatalog.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+
+-- Vinícius -> CLIENT
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u
+         JOIN tb_role r ON r.authority = 'ROLE_CLIENT'
+WHERE u.email = 'vinicius_andrade2010@hotmail.com'
+  AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+INSERT INTO tb_user_role (user_id, role_id)
+SELECT u.id, r.id
+FROM tb_user u
+         JOIN tb_role r ON r.authority = 'ROLE_ADMIN'
+WHERE u.email = 'vinicius_andrade2010@hotmail.com'
   AND NOT EXISTS (SELECT 1 FROM tb_user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
 
 INSERT INTO tb_category (name, created_at, updated_at)
