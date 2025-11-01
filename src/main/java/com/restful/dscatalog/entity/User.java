@@ -18,7 +18,6 @@ import static lombok.AccessLevel.NONE;
 
 
 @NoArgsConstructor
-@ToString
 @Getter
 @Setter
 @Entity
@@ -41,7 +40,6 @@ public class User implements UserDetails {
     private String password;
 
     @BatchSize(size = 50)
-    @ToString.Exclude
     @Setter(NONE)
     @JoinTable(
             name = "tb_user_role",
@@ -53,6 +51,11 @@ public class User implements UserDetails {
 
     public User(String first, String last, String email, String h) {
         initializeProfile(first, last, email, h);
+    }
+
+    public User(String username, String password) {
+        this.email = username;
+        this.password = password;
     }
 
     public void initializeProfile(String firstName, String lastName, String normalizedEmail, String passwordHash) {

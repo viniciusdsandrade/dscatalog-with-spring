@@ -13,9 +13,7 @@ import java.util.Objects;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 
-@AllArgsConstructor
 @NoArgsConstructor
-@ToString
 @Getter
 @Setter
 @Entity(name = "Category")
@@ -28,7 +26,7 @@ import static lombok.AccessLevel.NONE;
                 )
         }
 )
-public class Category implements Cloneable {
+public class Category {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -57,17 +55,6 @@ public class Category implements Cloneable {
 
     public Category(String capitalize) {
         this.name = capitalize;
-    }
-
-    @Override
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    public Category clone() {
-        Category clone = null;
-        try {
-            clone = new Category(this);
-        } catch (Exception ignored) {
-        }
-        return clone;
     }
 
     @Override

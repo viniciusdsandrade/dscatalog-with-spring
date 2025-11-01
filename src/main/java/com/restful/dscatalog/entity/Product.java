@@ -17,13 +17,19 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.NONE;
 import static org.hibernate.annotations.FetchMode.SUBSELECT;
 
-@AllArgsConstructor
 @NoArgsConstructor
-@ToString
 @Getter
 @Setter
 @Entity
-@Table(name = "tb_product")
+@Table(
+        name = "tb_product",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "product_name_unique",
+                        columnNames = "name"
+                )
+        }
+)
 public class Product {
 
     @Id
@@ -47,7 +53,6 @@ public class Product {
     @Fetch(SUBSELECT)
     @BatchSize(size = 50)
     @Setter(NONE)
-    @ToString.Exclude
     private Set<Category> categories = new HashSet<>();
 
     public Product(
