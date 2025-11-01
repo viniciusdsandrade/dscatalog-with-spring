@@ -11,12 +11,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -29,6 +29,8 @@ import org.springframework.web.filter.CorsFilter;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
+import static org.springframework.http.HttpMethod.*;
+import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 import static org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256;
 import static org.springframework.security.oauth2.jwt.JwtValidators.createDefaultWithIssuer;
 
@@ -65,11 +67,18 @@ public class ResourceServerConfig {
             ObjectProvider<JwtDecoder> jwtDecoderProvider
     ) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable);
+        http.sessionManagement(sm -> sm.sessionCreationPolicy(STATELESS));
+        http.requestCache(RequestCacheConfigurer::disable);
+
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/categories").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")
+                .requestMatchers(GET, "/api/v1/categories/**", "/categories/**").permitAll()
+                .requestMatchers(POST, "/api/v1/categories", "/categories").hasRole("ADMIN")
+                .requestMatchers(PUT, "/api/v1/categories/**", "/categories/**").hasRole("ADMIN")
+                .requestMatchers(DELETE, "/api/v1/categories/**", "/categories/**").hasRole("ADMIN")
+
+                .requestMatchers("/api/v1/products/**", "/products/**").authenticated()
+                .requestMatchers("/api/v1/users/**", "/users/**").authenticated()
+
                 .anyRequest().authenticated()
         );
 
@@ -84,6 +93,9 @@ public class ResourceServerConfig {
     }
 
     private JwtDecoder resolveJwtDecoder(ObjectProvider<JwtDecoder> provider) {
+        JwtDecoder fromContext = provider.getIfAvailable();
+        if (fromContext != null) return fromContext;
+
         if (testHmacSecret != null && !testHmacSecret.isBlank()) {
             SecretKey key = new SecretKeySpec(testHmacSecret.getBytes(UTF_8), "HmacSHA256");
             NimbusJwtDecoder decoder = NimbusJwtDecoder
@@ -93,8 +105,6 @@ public class ResourceServerConfig {
             decoder.setJwtValidator(createDefaultWithIssuer(testExpectedIssuer));
             return decoder;
         }
-        JwtDecoder fromContext = provider.getIfAvailable();
-        if (fromContext != null) return fromContext;
 
         throw new IllegalStateException(
                 "Nenhum JwtDecoder configurado. Defina security.test.jwt.secret (tests) ou forneça um JwtDecoder no contexto."
