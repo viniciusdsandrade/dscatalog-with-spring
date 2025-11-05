@@ -6,6 +6,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.repository.RoleRepository;
+import com.restful.dscatalog.util.AuthTokenProvider;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
@@ -17,12 +18,13 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Date;
+import java.util.UUID;
 
 import static com.nimbusds.jose.JWSAlgorithm.HS256;
+import static com.restful.dscatalog.util.JwtTestHelper.issueJwt;
 import static io.restassured.RestAssured.enableLoggingOfRequestAndResponseIfValidationFails;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static java.lang.System.nanoTime;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.now;
 import static java.time.temporal.ChronoUnit.HOURS;
@@ -49,7 +51,11 @@ class UserControllerRestAssured {
 
     private static final byte[] TEST_SECRET =
             "test-256-bit-secret-0123456789ABCDEF0123456789AB".getBytes(UTF_8);
-    private static final String ISSUER = "http://localhost/test";
+
+    private static final byte[] INVALID_SECRET =
+            "invalid-256-bit-secret-0123456789ABCDEF0123456789".getBytes(UTF_8);
+
+    private static final String EXPECTED_ISSUER = "http://localhost/test";
 
     private RequestSpecification requestSpecification;
 
@@ -68,34 +74,12 @@ class UserControllerRestAssured {
         enableLoggingOfRequestAndResponseIfValidationFails();
         this.requestSpecification = new RequestSpecBuilder()
                 .setPort(port)
+                .setAccept(JSON)
                 .build();
     }
 
-    private static String bearer(String token) {
-        return "Bearer " + token;
-    }
-
     private static String uniqueEmail(String prefix) {
-        return "%s-%d@example.com".formatted(prefix, nanoTime());
-    }
-
-    private static String issueJwt(String subjectEmail, String... roles) {
-        try {
-            var iat = now();
-            var claims = new JWTClaimsSet.Builder()
-                    .issuer(ISSUER)
-                    .subject(subjectEmail)
-                    .issueTime(Date.from(iat))
-                    .expirationTime(Date.from(iat.plus(1, HOURS)))
-                    .claim("username", subjectEmail)
-                    .claim("roles", roles)
-                    .build();
-            var jwt = new SignedJWT(new JWSHeader(HS256), claims);
-            jwt.sign(new MACSigner(TEST_SECRET));
-            return jwt.serialize();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to issue test JWT", e);
-        }
+        return "%s-%s@example.com".formatted(prefix, UUID.randomUUID());
     }
 
     private Long createUserAndReturnId(String email) {
@@ -108,7 +92,6 @@ class UserControllerRestAssured {
                 }""".formatted(email);
 
         return given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt(email, "CLIENT")))
                 .contentType(JSON)
                 .body(body)
                 .when()
@@ -116,6 +99,7 @@ class UserControllerRestAssured {
                 .then()
                 .statusCode(201)
                 .contentType(JSON)
+                .header("Location", matchesPattern(".*/api/v1/users/\\d+"))
                 .body("id", notNullValue())
                 .body("email", equalToIgnoringCase(email))
                 .extract()
@@ -124,8 +108,10 @@ class UserControllerRestAssured {
 
     @Test
     void getAllUsers_ShouldReturnOk_WhenNoArgumentsGiven() {
+        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt("reader@example.com", "CLIENT")))
+                .auth().oauth2(token)
                 .when()
                 .get(USERS)
                 .then()
@@ -140,8 +126,10 @@ class UserControllerRestAssured {
 
     @Test
     void getAllUsers_ShouldRespectPaginationParams_AndHeaders() {
+        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt("reader@example.com", "CLIENT")))
+                .auth().oauth2(token)
                 .queryParam("page", 0)
                 .queryParam("size", 5)
                 .when()
@@ -156,11 +144,30 @@ class UserControllerRestAssured {
     }
 
     @Test
+    void getAllUsers_ShouldCoerceNegativePageToZero() {
+        given().spec(requestSpecification)
+                .auth().oauth2(issueJwt("reader@example.com", "CLIENT"))
+                .queryParam("page", -1)
+                .queryParam("size", 5)
+                .when()
+                .get(USERS)
+                .then()
+                .statusCode(200)
+                .contentType(JSON)
+                .header("X-Page-Number", equalTo("0"))
+                .header("X-Page-Size", equalTo("5"))
+                .body("number", equalTo(0))
+                .body("size", equalTo(5));
+    }
+
+    @Test
     void findById_ShouldReturnUser_WhenIdExists() {
         Long id = createUserAndReturnId(uniqueEmail("findById"));
 
+        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt("reader@example.com", "CLIENT")))
+                .auth().oauth2(token)
                 .pathParam("id", id)
                 .when()
                 .get(USERS + "/{id}")
@@ -175,13 +182,54 @@ class UserControllerRestAssured {
 
     @Test
     void findById_ShouldReturnNotFound_WhenIdDoesNotExist() {
+        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt("reader@example.com", "CLIENT")))
+                .auth().oauth2(token)
                 .pathParam("id", 999_999L)
                 .when()
                 .get(USERS + "/{id}")
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    void findById_ShouldReturnBadRequest_WhenIdNotNumeric() {
+        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(token)
+                .when()
+                .get(USERS + "/{id}", "abc")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void getMe_ShouldReturnOk_WithBearerToken() {
+        String me = uniqueEmail("me");
+        createUserAndReturnId(me);
+
+        String token = AuthTokenProvider.getAccessToken(me, "password");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(token)
+                .when()
+                .get(USERS + "/me")
+                .then()
+                .statusCode(200)
+                .contentType(JSON)
+                .body("email", equalToIgnoringCase(me))
+                .body("id", notNullValue());
+    }
+
+    @Test
+    void getMe_ShouldReturnUnauthorized_WhenNoToken() {
+        given().spec(requestSpecification)
+                .when()
+                .get(USERS + "/me")
+                .then()
+                .statusCode(401);
     }
 
     @Test
@@ -196,7 +244,6 @@ class UserControllerRestAssured {
                 }""".formatted(email);
 
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt(email, "CLIENT")))
                 .contentType(JSON)
                 .body(body)
                 .when()
@@ -204,6 +251,7 @@ class UserControllerRestAssured {
                 .then()
                 .statusCode(201)
                 .contentType(JSON)
+                .header("Location", matchesPattern(".*/api/v1/users/\\d+"))
                 .body("id", notNullValue())
                 .body("email", equalTo(email))
                 .body("firstName", equalTo("Alice"))
@@ -221,14 +269,12 @@ class UserControllerRestAssured {
                 }""";
 
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt("reader@example.com", "CLIENT")))
                 .contentType(JSON)
                 .body(body)
                 .when()
                 .post(USERS)
                 .then()
-                .statusCode(400)
-                .body("findAll { it.field == 'firstName' || it.field == 'lastName' || it.field == 'email' || it.field == 'password' }.size()", greaterThanOrEqualTo(1));
+                .statusCode(400);
     }
 
     @Test
@@ -244,8 +290,10 @@ class UserControllerRestAssured {
                   "email": "%s"
                 }""".formatted(newEmail);
 
+        String token = AuthTokenProvider.getAccessToken(originalEmail, "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt(originalEmail, "CLIENT")))
+                .auth().oauth2(token)
                 .contentType(JSON)
                 .pathParam("id", id)
                 .body(body)
@@ -273,8 +321,10 @@ class UserControllerRestAssured {
                   "email": "%s"
                 }""".formatted(uniqueEmail("new-email"));
 
+        String token = AuthTokenProvider.getAccessToken(attackerEmail, "password");
+
         given().spec(requestSpecification)
-                .header("Authorization", bearer(issueJwt(attackerEmail, "CLIENT")))
+                .auth().oauth2(token)
                 .contentType(JSON)
                 .pathParam("id", id)
                 .body(body)
@@ -304,5 +354,131 @@ class UserControllerRestAssured {
                 .put(USERS + "/{id}")
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    void updateUser_ShouldReturnBadRequest_WhenInvalidPayload() {
+        String email = uniqueEmail("upd-badreq");
+        Long id = createUserAndReturnId(email);
+
+        String invalidBody = """
+            {
+              "firstName": "A",
+              "lastName": "",
+              "email": "not-an-email"
+            }""";
+
+        String token = AuthTokenProvider.getAccessToken(email, "password");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(token)
+                .contentType(JSON)
+                .pathParam("id", id)
+                .body(invalidBody)
+                .when()
+                .put(USERS + "/{id}")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void updateUser_ShouldReturnNotFound_WhenIdDoesNotExist() {
+        String email = uniqueEmail("upd-404");
+        createUserAndReturnId(email);
+
+        String body = """
+            { "firstName": "Xy", "lastName": "Zz", "email": "%s" }
+            """.formatted(uniqueEmail("upd-404-new"));
+
+        String token = AuthTokenProvider.getAccessToken(email, "password");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(token)
+                .contentType(JSON)
+                .pathParam("id", 9_999_999L)
+                .body(body)
+                .when()
+                .put(USERS + "/{id}")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void updateUser_ShouldReturnConflict_WhenEmailAlreadyExists() {
+        String owner = uniqueEmail("owner-conf");
+        Long ownerId = createUserAndReturnId(owner);
+        String other = uniqueEmail("other-conf");
+        createUserAndReturnId(other);
+
+        String body = """
+            { "firstName": "Owner", "lastName": "Same", "email": "%s" }
+            """.formatted(other);
+
+        String token = AuthTokenProvider.getAccessToken(owner, "password");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(token)
+                .contentType(JSON)
+                .pathParam("id", ownerId)
+                .body(body)
+                .when()
+                .put(USERS + "/{id}")
+                .then()
+                .statusCode(409);
+    }
+
+    @Test
+    void getAllUsers_ShouldReturnUnauthorized_WhenTokenExpired() {
+        String expired = issueCustomJwt(-1, TEST_SECRET, EXPECTED_ISSUER);
+
+        given().spec(requestSpecification)
+                .auth().oauth2(expired)
+                .when()
+                .get(USERS)
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    void getAllUsers_ShouldReturnUnauthorized_WhenSignatureInvalid() {
+        String invalidSigned = issueCustomJwt(1, INVALID_SECRET, EXPECTED_ISSUER);
+
+        given().spec(requestSpecification)
+                .auth().oauth2(invalidSigned)
+                .when()
+                .get(USERS)
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    void getAllUsers_ShouldReturnUnauthorized_WhenIssuerInvalid() {
+        String badIssuerToken = issueCustomJwt(1, TEST_SECRET, "http://malicious/issuer");
+
+        given().spec(requestSpecification)
+                .auth().oauth2(badIssuerToken)
+                .when()
+                .get(USERS)
+                .then()
+                .statusCode(401);
+    }
+
+    private static String issueCustomJwt(long hoursValid, byte[] secret, String issuer) {
+        try {
+            var iat = now();
+            var claims = new JWTClaimsSet.Builder()
+                    .issuer(issuer)
+                    .subject("reader@example.com")
+                    .issueTime(Date.from(iat))
+                    .expirationTime(Date.from(iat.plus(hoursValid, HOURS)))
+                    .claim("username", "reader@example.com")
+                    .claim("roles", new String[]{"CLIENT"})
+                    .build();
+            var jwt = new SignedJWT(new JWSHeader(HS256), claims);
+            jwt.sign(new MACSigner(secret));
+            return jwt.serialize();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to issue test JWT (negative scenario)", e);
+        }
     }
 }

@@ -95,18 +95,14 @@ public class ResourceServerConfig {
     }
 
     private JwtDecoder resolveJwtDecoder(ObjectProvider<JwtDecoder> provider) {
-        JwtDecoder fromContext = provider.getIfAvailable();
-        if (fromContext != null) return fromContext;
-
-        if (testHmacSecret != null && !testHmacSecret.isBlank()) {
+        if (testHmacSecret != null && !testHmacSecret.isBlank()) { // <- dá prioridade ao HS256 em teste
             SecretKey key = new SecretKeySpec(testHmacSecret.getBytes(UTF_8), "HmacSHA256");
-            NimbusJwtDecoder decoder = NimbusJwtDecoder
-                    .withSecretKey(key)
-                    .macAlgorithm(HS256)
-                    .build();
+            NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(HS256).build();
             decoder.setJwtValidator(createDefaultWithIssuer(testExpectedIssuer));
             return decoder;
         }
+        JwtDecoder fromContext = provider.getIfAvailable();
+        if (fromContext != null) return fromContext;
 
         throw new IllegalStateException(
                 "Nenhum JwtDecoder configurado. Defina security.test.jwt.secret (tests) ou forneça um JwtDecoder no contexto."
@@ -121,6 +117,7 @@ public class ResourceServerConfig {
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        jwtAuthenticationConverter.setPrincipalClaimName("username");
         return jwtAuthenticationConverter;
     }
 
