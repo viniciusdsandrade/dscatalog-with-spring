@@ -21,7 +21,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import static com.restful.dscatalog.TokenUtil.obtainAccessToken;
+import static com.restful.dscatalog.util.TokenUtil.obtainAccessToken;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static java.lang.System.nanoTime;

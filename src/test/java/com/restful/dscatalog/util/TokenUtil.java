@@ -1,4 +1,4 @@
-package com.restful.dscatalog;
+package com.restful.dscatalog.util;
 
 import static io.restassured.RestAssured.given;
 

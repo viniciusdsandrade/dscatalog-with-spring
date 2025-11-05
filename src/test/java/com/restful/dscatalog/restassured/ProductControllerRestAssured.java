@@ -22,7 +22,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import static com.nimbusds.jose.JWSAlgorithm.HS256;
-import static com.restful.dscatalog.TokenUtil.obtainAccessToken;
+import static com.restful.dscatalog.util.TokenUtil.obtainAccessToken;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static java.lang.System.nanoTime;
