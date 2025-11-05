@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,7 +35,6 @@ import static org.springframework.security.oauth2.jwt.JwtValidators.createDefaul
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class ResourceServerConfig {
 
     @Value("${cors.origins}")
@@ -51,45 +49,49 @@ public class ResourceServerConfig {
     @Bean
     @Profile("h2")
     @Order(1)
-    SecurityFilterChain h2SecurityFilterChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/h2-console/**")
+    SecurityFilterChain h2SecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.securityMatcher("/h2-console/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-        return http.build();
+        return httpSecurity.build();
     }
 
     @Bean
     @Order(3)
     SecurityFilterChain rsSecurityFilterChain(
-            HttpSecurity http,
+            HttpSecurity httpSecurity,
             JwtAuthenticationConverter jwtAuthenticationConverter,
             ObjectProvider<JwtDecoder> jwtDecoderProvider
     ) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable);
-        http.sessionManagement(sm -> sm.sessionCreationPolicy(STATELESS));
-        http.requestCache(RequestCacheConfigurer::disable);
+        httpSecurity.csrf(AbstractHttpConfigurer::disable);
+        httpSecurity.sessionManagement(sm -> sm.sessionCreationPolicy(STATELESS));
+        httpSecurity.requestCache(RequestCacheConfigurer::disable);
 
-        http.authorizeHttpRequests(auth -> auth
+        httpSecurity.authorizeHttpRequests(auth -> auth
                 .requestMatchers(GET, "/api/v1/categories/**", "/categories/**").permitAll()
                 .requestMatchers(POST, "/api/v1/categories", "/categories").hasRole("ADMIN")
                 .requestMatchers(PUT, "/api/v1/categories/**", "/categories/**").hasRole("ADMIN")
                 .requestMatchers(DELETE, "/api/v1/categories/**", "/categories/**").hasRole("ADMIN")
 
+                .requestMatchers(GET, "/api/v1/users/me", "/users/me").authenticated()
+                .requestMatchers(GET, "/api/v1/users/**", "/users/**").permitAll()
+                .requestMatchers(POST, "/api/v1/users", "/users").permitAll()
+                .requestMatchers(PUT, "/api/v1/users/**", "/users/**").authenticated()
+
                 .requestMatchers("/api/v1/products/**", "/products/**").authenticated()
-                .requestMatchers("/api/v1/users/**", "/users/**").authenticated()
 
                 .anyRequest().authenticated()
         );
 
-        http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
+        httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
             JwtDecoder activeDecoder = resolveJwtDecoder(jwtDecoderProvider);
             jwt.decoder(activeDecoder);
             jwt.jwtAuthenticationConverter(jwtAuthenticationConverter);
         }));
 
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
-        return http.build();
+        httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+        return httpSecurity.build();
     }
 
     private JwtDecoder resolveJwtDecoder(ObjectProvider<JwtDecoder> provider) {
