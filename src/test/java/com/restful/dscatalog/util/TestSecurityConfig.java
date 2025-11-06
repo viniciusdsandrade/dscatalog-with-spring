@@ -1,4 +1,4 @@
-package com.restful.dscatalog.security;
+package com.restful.dscatalog.util;
 
 
 import org.springframework.boot.test.context.TestConfiguration;
