@@ -6,10 +6,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NoArgsConstructor;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import static com.nimbusds.jose.JWSAlgorithm.HS256;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.now;
 import static java.time.temporal.ChronoUnit.HOURS;
 
@@ -18,7 +18,7 @@ public final class JwtTestHelper {
 
     private static final String ISSUER = "http://localhost/test";
     private static final byte[] TEST_SECRET = "test-256-bit-secret-0123456789ABCDEF0123456789AB"
-            .getBytes(StandardCharsets.UTF_8);
+            .getBytes(UTF_8);
 
     public static String issueJwt(String subjectEmail, String... roles) {
         try {
