@@ -48,8 +48,8 @@ public class ProductServiceImpl implements ProductService {
         this.categoryRepository = categoryRepository;
     }
 
-    @Transactional
     @Override
+    @Transactional
     public Product create(@Valid ProductPostDTO productPostDTO) {
         try {
             Product product = new Product();
@@ -69,8 +69,8 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    @Transactional
     @Override
+    @Transactional
     public Product createByCategoryNames(@Valid ProductPostByNameDTO productPostByNameDTO) {
         try {
             Product product = new Product();
@@ -135,8 +135,8 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
     }
 
-    @Transactional
     @Override
+    @Transactional
     public @Valid ProductDetailsDTO update(Long id, @Valid ProductPostDTO productPostDTO) {
         try {
             Product product = productRepository.getReferenceById(id);
@@ -165,8 +165,8 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    @Transactional
     @Override
+    @Transactional
     public ProductDetailsDTO delete(Long id) {
         var product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Id not found " + id));
