@@ -4,6 +4,7 @@ import com.restful.dscatalog.dto.role.RoleDTO;
 import com.restful.dscatalog.dto.user.UserDTO;
 import com.restful.dscatalog.dto.user.UserInsertDTO;
 import com.restful.dscatalog.dto.user.UserUpdateDTO;
+import com.restful.dscatalog.security.TestSecurityConfig;
 import com.restful.dscatalog.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,14 +13,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -32,23 +33,18 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.springframework.context.annotation.FilterType.ANNOTATION;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(
-        value = UserController.class,
-        excludeFilters = @ComponentScan.Filter(
-                type = ANNOTATION,
-                classes = ControllerAdvice.class
-        )
-)
-@AutoConfigureMockMvc(addFilters = false)
+@WebMvcTest(UserController.class)
+@AutoConfigureMockMvc
+@Import(TestSecurityConfig.class)
 class UserControllerTest {
 
     @Autowired
@@ -65,12 +61,7 @@ class UserControllerTest {
     }
 
     private static UserDTO userDto(long id, String firstName, String lastName, String email) {
-        return new UserDTO(
-                id,
-                firstName,
-                lastName,
-                email
-        );
+        return new UserDTO(id, firstName, lastName, email);
     }
 
     @Test
@@ -91,9 +82,9 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/v1/users -> 200 e paginação (content)")
     void getAll_ok_paged() throws Exception {
-        var u1 = userDto(1L, "Alice", "Silva", "alice@example.com");
-        var u2 = userDto(2L, "Bob", "Souza", "bob@example.com");
-        var page = new PageImpl<>(List.of(u1, u2), PageRequest.of(0, 5), 2);
+        var user1 = userDto(1L, "Alice", "Silva", "alice@example.com");
+        var user2 = userDto(2L, "Bob", "Souza", "bob@example.com");
+        var page = new PageImpl<>(List.of(user1, user2), PageRequest.of(0, 5), 2);
         given(userService.findAllPaged(any(Pageable.class))).willReturn(page);
 
         mockMvc.perform(get(baseUrl)
@@ -113,6 +104,23 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/users -> 200 com metadados de paginação (number, size, totalElements, totalPages)")
+    void getAll_ok_paged_metadata() throws Exception {
+        Page<UserDTO> page = new PageImpl<>(List.of(), PageRequest.of(2, 50), 0);
+        given(userService.findAllPaged(any(Pageable.class))).willReturn(page);
+
+        mockMvc.perform(get(baseUrl)
+                        .param("page", "2")
+                        .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.number").value(2))
+                .andExpect(jsonPath("$.size").value(50))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/users -> 201 e Location apontando para o recurso criado")
     void create_created_withLocation() throws Exception {
         var created = userDto(99L, "Carol", "Lima", "carol@example.com");
@@ -128,6 +136,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -147,6 +156,7 @@ class UserControllerTest {
         String invalidBody = "{}";
 
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content(invalidBody))
                 .andExpect(status().isBadRequest());
@@ -169,6 +179,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(put(baseUrl + "/{id}", 7L)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -196,15 +207,16 @@ class UserControllerTest {
                 .willThrow(new ResponseStatusException(CONFLICT, "email already exists"));
 
         String body = """
-        {
-          "firstName": "Carol",
-          "lastName": "Lima",
-          "email": "carol@example.com",
-          "password": "Strong#Pass123"
-        }
-        """;
+                {
+                  "firstName": "Carol",
+                  "lastName": "Lima",
+                  "email": "carol@example.com",
+                  "password": "Strong#Pass123"
+                }
+                """;
 
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isConflict());
@@ -214,10 +226,16 @@ class UserControllerTest {
     @DisplayName("POST /api/v1/users -> 400 com payload inválido (violação @Valid)")
     void create_badRequest_validationDetails() throws Exception {
         String invalid = """
-                { "firstName": "", "lastName": "", "email": "not-an-email", "password": "" }
-                """;
+                 {\s
+                 "firstName": "",\s
+                 "lastName": "",\s
+                 "email": "not-an-email",\s
+                 "password": ""\s
+                 }
+                \s""";
 
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content(invalid))
                 .andExpect(status().isBadRequest());
@@ -229,6 +247,7 @@ class UserControllerTest {
     @DisplayName("POST /api/v1/users -> 415 quando Content-Type não é application/json")
     void create_unsupportedMediaType() throws Exception {
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType("text/plain")
                         .content("not json"))
                 .andExpect(status().isUnsupportedMediaType());
@@ -249,6 +268,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .header("Accept", "application/xml")
                         .content(body))
@@ -265,11 +285,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/v1/users -> Pageable com page=2,size=50,sort=lastName,asc é repassado ao service")
     void getAll_capturesPageable() throws Exception {
-        Page<UserDTO> page = new PageImpl<>(
-                List.of(),
-                PageRequest.of(2, 50),
-                0
-        );
+        Page<UserDTO> page = new PageImpl<>(List.of(), PageRequest.of(2, 50), 0);
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         given(userService.findAllPaged(any(Pageable.class))).willReturn(page);
 
@@ -299,9 +315,10 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/users -> 400 quando JSON malformado")
+    @DisplayName("POST /api/v1/users -> 400 quando JSON malformado (string literal)")
     void create_badRequest_onMalformedJson() throws Exception {
         mockMvc.perform(post(baseUrl)
+                        .with(csrf())
                         .contentType(APPLICATION_JSON)
                         .content("\"not-json\""))
                 .andExpect(status().isBadRequest());
@@ -320,5 +337,169 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles").isArray())
                 .andExpect(jsonPath("$.roles[0].authority").value("ROLE_ADMIN"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/users/me -> 401 quando não autenticado")
+    void getMe_unauthenticated() throws Exception {
+        mockMvc.perform(get(baseUrl + "/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /api/v1/users/me -> 200 quando autenticado")
+    void getMe_authenticated_ok() throws Exception {
+        var me = userDto(123L, "Zoe", "Pereira", "zoe@example.com");
+        given(userService.getMe()).willReturn(me);
+
+        mockMvc.perform(get(baseUrl + "/me"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(123L))
+                .andExpect(jsonPath("$.email").value("zoe@example.com"));
+    }
+
+    @Test
+    @DisplayName("GET /users/{id} -> 200 usando alias de rota")
+    void findById_ok_viaAlias() throws Exception {
+        var dto = userDto(5L, "Ana", "Costa", "ana@example.com");
+        given(userService.findById(5L)).willReturn(dto);
+
+        mockMvc.perform(get("/users/{id}", 5L))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(5L));
+    }
+
+    @Test
+    @DisplayName("POST /users -> 201 e Location sempre em /api/v1/users/{id}")
+    void create_created_withLocation_viaAlias() throws Exception {
+        var created = userDto(77L, "Rick", "Dias", "rick@example.com");
+        given(userService.insert(any(UserInsertDTO.class))).willReturn(created);
+
+        String body = """
+                {
+                   "firstName": "Rick",
+                  "lastName": "Dias",
+                  "email": "rick@example.com",
+                  "password": "Abc#12345"
+                }
+                """;
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", endsWith("/api/v1/users/77")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/users -> 406 quando Accept não suportado")
+    void getAll_notAcceptable() throws Exception {
+        given(userService.findAllPaged(any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get(baseUrl)
+                        .header("Accept", "application/xml"))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/users/{id} -> 415 quando Content-Type não suportado")
+    void update_unsupportedMediaType() throws Exception {
+        mockMvc.perform(put(baseUrl + "/{id}", 10L)
+                        .with(csrf())
+                        .contentType("text/plain")
+                        .content("not json"))
+                .andExpect(status().isUnsupportedMediaType());
+
+        verify(userService, never()).update(eq(10L), any(UserUpdateDTO.class));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/users/{id} -> 406 quando Accept não suportado")
+    void update_notAcceptable() throws Exception {
+        String body = """
+                 {\s
+                     "firstName": "New",\s
+                     "lastName": "Name",\s
+                     "email": "new@example.com"\s
+                 }
+                \s""";
+        mockMvc.perform(put(baseUrl + "/{id}", 10L)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .header("Accept", "application/xml")
+                        .content(body))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/users/{id} -> 400 com payload inválido (violação @Valid)")
+    void update_badRequest_validationDetails() throws Exception {
+        String invalid = """
+                 {\s
+                 "firstName": "",\s
+                 "lastName": "",\s
+                 "email": "invalid"\s
+                 }
+                \s""";
+
+        mockMvc.perform(put(baseUrl + "/{id}", 10L)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content(invalid))
+                .andExpect(status().isBadRequest());
+
+        verify(userService, never()).update(eq(10L), any(UserUpdateDTO.class));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/users/{id} -> 404 quando usuário não existe (payload válido)")
+    void update_notFound() throws Exception {
+        given(userService.update(eq(1234L), any(UserUpdateDTO.class)))
+                .willThrow(new ResponseStatusException(NOT_FOUND, "User 1234"));
+
+        String body = """
+                 {\s
+                 "firstName": "Ana",\s
+                 "lastName": "Barros",\s
+                 "email": "a.b@example.com"\s
+                 }
+                \s""";
+
+        mockMvc.perform(put(baseUrl + "/{id}", 1234L)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+
+        verify(userService).update(eq(1234L), any(UserUpdateDTO.class));
+    }
+
+
+    @Test
+    @DisplayName("PUT /api/v1/users/{id} -> 409 quando e-mail conflita com outro usuário (payload válido)")
+    void update_conflict() throws Exception {
+        given(userService.update(eq(20L), any(UserUpdateDTO.class)))
+                .willThrow(new ResponseStatusException(CONFLICT, "email already exists"));
+
+        String body = """
+                 {\s
+                 "firstName": "Ana",\s
+                 "lastName": "Barros",\s
+                 "email": "duplicated@example.com"
+                 }
+                \s""";
+
+        mockMvc.perform(put(baseUrl + "/{id}", 20L)
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict());
+
+        verify(userService).update(eq(20L), any(UserUpdateDTO.class));
     }
 }
