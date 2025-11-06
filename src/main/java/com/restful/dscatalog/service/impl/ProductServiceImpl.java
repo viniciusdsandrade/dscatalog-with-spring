@@ -1,6 +1,6 @@
 package com.restful.dscatalog.service.impl;
 
-import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.category.CategoryPostDTO;
 import com.restful.dscatalog.dto.product.ProductPostDTO;
 import com.restful.dscatalog.dto.product.ProductPostByNameDTO;
 import com.restful.dscatalog.dto.product.ProductDetailsDTO;
@@ -29,11 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.lang.Character.toUpperCase;
 import static java.time.LocalDateTime.now;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.*;
 
 @Service("productService")
 public class ProductServiceImpl implements ProductService {
@@ -54,18 +53,19 @@ public class ProductServiceImpl implements ProductService {
     public Product create(@Valid ProductPostDTO productPostDTO) {
         try {
             Product product = new Product();
-            applyScalarFields(
+            setProductScalarFields(
                     productPostDTO.name(),
                     productPostDTO.description(),
                     productPostDTO.price(),
                     productPostDTO.imgUrl(),
-                    productPostDTO.date(), product
+                    productPostDTO.date(),
+                    product
             );
-            applyCategoriesByIds(productPostDTO.categoryIds(), product);
+            setCategoriesFromIds(productPostDTO.categoryIds(), product);
             productRepository.saveAndFlush(product);
             return product;
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateEntryException("Entrada duplicada para Produto.");
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            throw new DuplicateEntryException("Produto duplicado.");
         }
     }
 
@@ -74,7 +74,7 @@ public class ProductServiceImpl implements ProductService {
     public Product createByCategoryNames(@Valid ProductPostByNameDTO productPostByNameDTO) {
         try {
             Product product = new Product();
-            applyScalarFields(
+            setProductScalarFields(
                     productPostByNameDTO.name(),
                     productPostByNameDTO.description(),
                     productPostByNameDTO.price(),
@@ -102,34 +102,34 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDetailsDTO> listAll(Pageable pageable) {
-        Page<Product> page = productRepository.findAll(pageable);
-        if (page.isEmpty()) return page.map(ProductDetailsDTO::new);
+        Page<Product> productsPage = productRepository.findAll(pageable);
+        if (productsPage.isEmpty()) return productsPage.map(ProductDetailsDTO::new);
 
-        List<Long> ids = page.stream()
+        List<Long> productsIds = productsPage.stream()
                 .map(Product::getId)
                 .toList();
 
-        List<Product> fetched = productRepository.findAllWithCategoriesByIdIn(ids);
+        List<Product> productsWithCategories = productRepository.findAllWithCategoriesByIdIn(productsIds);
 
-        Map<Long, Product> byIdHydrated = fetched.stream()
+        Map<Long, Product> productsById = productsWithCategories.stream()
                 .collect(toMap(Product::getId, p -> p));
 
-        return page.map(p -> {
-            Product product = byIdHydrated.getOrDefault(p.getId(), p);
+        return productsPage.map(pagedProduct -> {
+            Product product = productsById.getOrDefault(pagedProduct.getId(), pagedProduct);
             return new ProductDetailsDTO(product);
         });
     }
 
     @Override
     public List<ProductDetailsDTO> listAllWithoutPagination() {
-        List<Long> ids = productRepository.findAll()
+        List<Long> productsIds = productRepository.findAll()
                 .stream()
                 .map(Product::getId)
                 .toList();
 
-        if (ids.isEmpty()) return List.of();
+        if (productsIds.isEmpty()) return List.of();
 
-        return productRepository.findAllWithCategoriesByIdIn(ids)
+        return productRepository.findAllWithCategoriesByIdIn(productsIds)
                 .stream()
                 .map(ProductDetailsDTO::new)
                 .toList();
@@ -141,7 +141,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             Product product = productRepository.getReferenceById(id);
 
-            applyScalarFields(
+            setProductScalarFields(
                     productPostDTO.name(),
                     productPostDTO.description(),
                     productPostDTO.price(),
@@ -151,16 +151,16 @@ public class ProductServiceImpl implements ProductService {
             );
 
             if (productPostDTO.categoryIds() != null)
-                applyCategoriesByIds(productPostDTO.categoryIds(), product);
+                setCategoriesFromIds(productPostDTO.categoryIds(), product);
 
             try {
                 productRepository.save(product);
-            } catch (DataIntegrityViolationException e) {
+            } catch (DataIntegrityViolationException dataIntegrityViolationException) {
                 throw new DuplicateEntryException("Entrada duplicada para Produto.");
             }
 
             return new ProductDetailsDTO(product);
-        } catch (EntityNotFoundException e) {
+        } catch (EntityNotFoundException entityNotFoundException) {
             throw new ResourceNotFoundException("Product not found: " + id);
         }
     }
@@ -168,47 +168,47 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public ProductDetailsDTO delete(Long id) {
-        var entity = productRepository.findById(id)
+        var product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Id not found " + id));
-        var dto = new ProductDetailsDTO(entity);
+        var productDetailsDTO = new ProductDetailsDTO(product);
         try {
-            productRepository.delete(entity);
+            productRepository.delete(product);
             productRepository.flush();
-            return dto;
-        } catch (DataIntegrityViolationException e) {
+            return productDetailsDTO;
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new DatabaseException("Integrity violation");
         }
     }
 
-    private void applyScalarFields(
+    private void setProductScalarFields(
             String name,
             String description,
             Double price,
             String imgUrl,
             LocalDateTime date,
-            Product entity
+            Product product
     ) {
-        if (name != null) entity.setName(name.trim());
-        if (description != null) entity.setDescription(description.trim());
-        if (price != null) entity.setPrice(BigDecimal.valueOf(price));
-        if (imgUrl != null) entity.setImgUrl(imgUrl.trim());
-        if (date != null) entity.setDate(date);
+        if (name != null) product.setName(name.trim());
+        if (description != null) product.setDescription(description.trim());
+        if (price != null) product.setPrice(BigDecimal.valueOf(price));
+        if (imgUrl != null) product.setImgUrl(imgUrl.trim());
+        if (date != null) product.setDate(date);
     }
 
-    private void applyCategoriesByIds(List<Long> categoryIds, Product product) {
+    private void setCategoriesFromIds(List<Long> requestedCategoryIds, Product product) {
         product.getCategories().clear();
-        if (categoryIds == null || categoryIds.isEmpty()) return;
-        product.getCategories().addAll(resolveCategories(categoryIds));
+        if (requestedCategoryIds == null || requestedCategoryIds.isEmpty()) return;
+        product.getCategories().addAll(fetchCategoriesOrThrow(requestedCategoryIds));
     }
 
-    private void applyCategoriesByNames(Collection<String> rawNames, Product product) {
+    private void applyCategoriesByNames(Collection<String> categoryNames, Product product) {
         product.getCategories().clear();
-        if (rawNames == null || rawNames.isEmpty()) return;
+        if (categoryNames == null || categoryNames.isEmpty()) return;
 
-        LinkedHashSet<String> normalized = normalizeNames(rawNames);
-        for (String normalizedLower : normalized) {
-            Category cat = findOrCreateCategoryCaseInsensitive(normalizedLower);
-            product.getCategories().add(cat);
+        LinkedHashSet<String> normalizedNames = normalizeNames(categoryNames);
+        for (String normalizedName : normalizedNames) {
+            Category category = findOrCreateCategoryCaseInsensitive(normalizedName);
+            product.getCategories().add(category);
         }
     }
 
@@ -218,27 +218,31 @@ public class ProductServiceImpl implements ProductService {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(String::toLowerCase)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(toCollection(LinkedHashSet::new));
     }
 
-    private Category findOrCreateCategoryCaseInsensitive(String normalizedLower) {
-        return categoryRepository.findByNameIgnoreCase(normalizedLower)
+    private Category findOrCreateCategoryCaseInsensitive(String normalizedName) {
+        return categoryRepository.findByNameIgnoreCase(normalizedName)
                 .orElseGet(() -> categoryRepository.saveAndFlush(
-                        new Category(new CategoryPostDTO(capitalize(normalizedLower)))
+                        new Category(new CategoryPostDTO(capitalize(normalizedName)))
                 ));
     }
 
-    private Set<Category> resolveCategories(List<Long> categoryIds) {
+    private Set<Category> fetchCategoriesOrThrow(List<Long> categoryIds) {
         if (categoryIds == null) return Set.of();
 
-        var found = new HashSet<>(categoryRepository.findAllById(categoryIds));
-        var requested = new HashSet<>(categoryIds);
-        var foundIds = found.stream().map(Category::getId).collect(Collectors.toSet());
-        requested.removeAll(foundIds);
-        if (!requested.isEmpty()) {
-            throw new EntityNotFoundException("Categorias inexistentes: " + requested);
-        }
-        return found;
+        Set<Category> categories = new HashSet<>(categoryRepository.findAllById(categoryIds));
+        Set<Long> foundCategoryIds = categories.stream()
+                .map(Category::getId)
+                .collect(toSet());
+
+        Set<Long> missingIds = new HashSet<>(categoryIds);
+        missingIds.removeAll(foundCategoryIds);
+
+        if (!missingIds.isEmpty())
+            throw new EntityNotFoundException("Categorias inexistentes: " + missingIds);
+
+        return categories;
     }
 
     private static String capitalize(String string) {
