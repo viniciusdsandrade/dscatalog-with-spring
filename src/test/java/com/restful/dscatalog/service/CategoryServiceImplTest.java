@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service;
 
-import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
-import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.category.CategoryDetailsDTO;
+import com.restful.dscatalog.dto.category.CategoryPostDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.exception.DatabaseException;
 import com.restful.dscatalog.exception.DuplicateEntryException;

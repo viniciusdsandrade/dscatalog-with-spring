@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service.impl;
 
-import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
-import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
+import com.restful.dscatalog.dto.category.CategoryPostDTO;
+import com.restful.dscatalog.dto.category.CategoryDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.exception.DatabaseException;
 import com.restful.dscatalog.exception.DuplicateEntryException;
@@ -28,9 +28,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public Category create(@Valid CategoryPostDTO categoryPostDTO) {
         try {
-            Category newCategory = new Category(categoryPostDTO);
-            categoryRepository.saveAndFlush(newCategory);
-            return newCategory;
+            Category category = new Category(categoryPostDTO);
+            categoryRepository.saveAndFlush(category);
+            return category;
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateEntryException("Entrada duplicada para Categoria.");
         }
@@ -65,14 +65,14 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryDetailsDTO delete(Long id) {
-        var entity = categoryRepository.findById(id)
+        Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
         try {
-            categoryRepository.delete(entity);
+            categoryRepository.delete(category);
         } catch (DataIntegrityViolationException e) {
             throw new DatabaseException("Integrity violation");
         }
-        return new CategoryDetailsDTO(entity);
+        return new CategoryDetailsDTO(category);
     }
 
     private void copyDtoToEntity(CategoryPostDTO dto, Category entity) {

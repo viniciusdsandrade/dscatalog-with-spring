@@ -1,8 +1,8 @@
 package com.restful.dscatalog.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
-import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
+import com.restful.dscatalog.dto.category.CategoryDetailsDTO;
+import com.restful.dscatalog.dto.category.CategoryPostDTO;
 import com.restful.dscatalog.entity.Category;
 import com.restful.dscatalog.service.CategoryService;
 import org.junit.jupiter.api.BeforeEach;

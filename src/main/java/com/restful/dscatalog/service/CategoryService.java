@@ -1,7 +1,7 @@
 package com.restful.dscatalog.service;
 
-import com.restful.dscatalog.dto.categoria.CategoryPostDTO;
-import com.restful.dscatalog.dto.categoria.CategoryDetailsDTO;
+import com.restful.dscatalog.dto.category.CategoryPostDTO;
+import com.restful.dscatalog.dto.category.CategoryDetailsDTO;
 import com.restful.dscatalog.entity.Category;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
