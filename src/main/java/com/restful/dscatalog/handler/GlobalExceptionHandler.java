@@ -19,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -173,6 +174,25 @@ public class GlobalExceptionHandler {
                 "ACCESS_DENIED"
         );
         return ResponseEntity.status(FORBIDDEN).body(List.of(errorDetails));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<List<ErrorDetails>> handleResponseStatusException(
+            ResponseStatusException responseStatusException,
+            WebRequest webRequest
+    ) {
+        String message = responseStatusException.getReason() != null
+                ? responseStatusException.getStatusCode() + " \"" + responseStatusException.getReason() + "\""
+                : responseStatusException.getStatusCode().toString();
+        String code = responseStatusException.getStatusCode().toString();
+
+        ErrorDetails errorDetails = new ErrorDetails(
+                now(),
+                htmlEscape(message),
+                htmlEscape(webRequest.getDescription(false)),
+                htmlEscape(code)
+        );
+        return ResponseEntity.status(responseStatusException.getStatusCode()).body(List.of(errorDetails));
     }
 
     @ExceptionHandler(Exception.class)
