@@ -19,8 +19,7 @@ public class TestSecurityConfig {
     @Primary
     @Order(1)
     SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
+        http.csrf(AbstractHttpConfigurer::disable)
                 .requestCache(RequestCacheConfigurer::disable)
                 .httpBasic(withDefaults())
                 .authorizeHttpRequests(auth -> auth

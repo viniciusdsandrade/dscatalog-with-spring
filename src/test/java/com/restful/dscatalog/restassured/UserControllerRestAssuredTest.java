@@ -6,7 +6,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.restful.dscatalog.entity.Role;
 import com.restful.dscatalog.repository.RoleRepository;
-import com.restful.dscatalog.util.AuthTokenProvider;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
@@ -21,6 +20,7 @@ import java.util.Date;
 import java.util.UUID;
 
 import static com.nimbusds.jose.JWSAlgorithm.HS256;
+import static com.restful.dscatalog.util.AuthTokenProvider.getAccessToken;
 import static com.restful.dscatalog.util.JwtTestHelper.issueJwt;
 import static io.restassured.RestAssured.enableLoggingOfRequestAndResponseIfValidationFails;
 import static io.restassured.RestAssured.given;
@@ -108,7 +108,7 @@ class UserControllerRestAssuredTest {
 
     @Test
     void getAllUsers_ShouldReturnOk_WhenNoArgumentsGiven() {
-        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+        String token = getAccessToken("reader@example.com", "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -126,7 +126,7 @@ class UserControllerRestAssuredTest {
 
     @Test
     void getAllUsers_ShouldRespectPaginationParams_AndHeaders() {
-        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+        String token = getAccessToken("reader@example.com", "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -164,7 +164,7 @@ class UserControllerRestAssuredTest {
     void findById_ShouldReturnUser_WhenIdExists() {
         Long id = createUserAndReturnId(uniqueEmail("findById"));
 
-        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+        String token = getAccessToken("reader@example.com", "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -182,7 +182,7 @@ class UserControllerRestAssuredTest {
 
     @Test
     void findById_ShouldReturnNotFound_WhenIdDoesNotExist() {
-        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+        String token = getAccessToken("reader@example.com", "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -195,7 +195,7 @@ class UserControllerRestAssuredTest {
 
     @Test
     void findById_ShouldReturnBadRequest_WhenIdNotNumeric() {
-        String token = AuthTokenProvider.getAccessToken("reader@example.com", "password");
+        String token = getAccessToken("reader@example.com", "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -210,7 +210,7 @@ class UserControllerRestAssuredTest {
         String me = uniqueEmail("me");
         createUserAndReturnId(me);
 
-        String token = AuthTokenProvider.getAccessToken(me, "password");
+        String token = getAccessToken(me, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -290,7 +290,7 @@ class UserControllerRestAssuredTest {
                   "email": "%s"
                 }""".formatted(newEmail);
 
-        String token = AuthTokenProvider.getAccessToken(originalEmail, "password");
+        String token = getAccessToken(originalEmail, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -321,7 +321,7 @@ class UserControllerRestAssuredTest {
                   "email": "%s"
                 }""".formatted(uniqueEmail("new-email"));
 
-        String token = AuthTokenProvider.getAccessToken(attackerEmail, "password");
+        String token = getAccessToken(attackerEmail, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -368,7 +368,7 @@ class UserControllerRestAssuredTest {
               "email": "not-an-email"
             }""";
 
-        String token = AuthTokenProvider.getAccessToken(email, "password");
+        String token = getAccessToken(email, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -390,7 +390,7 @@ class UserControllerRestAssuredTest {
             { "firstName": "Xy", "lastName": "Zz", "email": "%s" }
             """.formatted(uniqueEmail("upd-404-new"));
 
-        String token = AuthTokenProvider.getAccessToken(email, "password");
+        String token = getAccessToken(email, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
@@ -414,7 +414,7 @@ class UserControllerRestAssuredTest {
             { "firstName": "Owner", "lastName": "Same", "email": "%s" }
             """.formatted(other);
 
-        String token = AuthTokenProvider.getAccessToken(owner, "password");
+        String token = getAccessToken(owner, "password");
 
         given().spec(requestSpecification)
                 .auth().oauth2(token)
