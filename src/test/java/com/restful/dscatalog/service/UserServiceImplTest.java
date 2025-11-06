@@ -53,7 +53,7 @@ class UserServiceImplTest {
     private RoleRepository roleRepository;
 
     @InjectMocks
-    private UserServiceImpl service;
+    private UserServiceImpl userServiceImpl;
 
     private static <T> T withId(T target, long id) {
         setField(target, "id", id);
@@ -79,12 +79,12 @@ class UserServiceImplTest {
     void loadUserByUsername_returnsUserWithRoles() {
         String email = "alice@example.com";
         String hash = "{bcrypt}xxx";
-        var proj1 = new ProjectionStub(email, hash, 1L, "ROLE_CLIENT");
-        var proj2 = new ProjectionStub(email, hash, 2L, "ROLE_ADMIN");
+        var projectionStub1 = new ProjectionStub(email, hash, 1L, "ROLE_CLIENT");
+        var projectionStub2 = new ProjectionStub(email, hash, 2L, "ROLE_ADMIN");
         given(userRepository.searchUserAndRolesByEmail(email))
-                .willReturn(List.of(proj1, proj2));
+                .willReturn(List.of(projectionStub1, projectionStub2));
 
-        var userDetails = service.loadUserByUsername(email);
+        var userDetails = userServiceImpl.loadUserByUsername(email);
 
         assertThat(userDetails.getUsername()).isEqualTo(email);
         assertThat(userDetails.getPassword()).isEqualTo(hash);
@@ -100,21 +100,21 @@ class UserServiceImplTest {
                 .willReturn(List.of());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> service.loadUserByUsername("missing@example.com"));
+                () -> userServiceImpl.loadUserByUsername("missing@example.com"));
     }
 
     @Test
     @DisplayName("findAllPaged: pagina e mapeia para UserDTO")
     void findAllPaged_mapsToDTO() {
-        User u1 = withId(newUser("A", "B", "a@x.com"), 1L);
-        Page<User> page = new PageImpl<>(List.of(u1), PageRequest.of(0, 1), 2);
+        User user1 = withId(newUser("A", "B", "a@x.com"), 1L);
+        Page<User> page = new PageImpl<>(List.of(user1), PageRequest.of(0, 1), 2);
         given(userRepository.findAll(any(Pageable.class))).willReturn(page);
 
-        Page<UserDTO> out = service.findAllPaged(PageRequest.of(0, 1));
+        Page<UserDTO> userDTOPage = userServiceImpl.findAllPaged(PageRequest.of(0, 1));
 
-        assertThat(out.getTotalElements()).isEqualTo(2);
-        assertThat(out.getContent()).hasSize(1);
-        assertThat(out.getContent().getFirst().getEmail()).isEqualTo("a@x.com");
+        assertThat(userDTOPage.getTotalElements()).isEqualTo(2);
+        assertThat(userDTOPage.getContent()).hasSize(1);
+        assertThat(userDTOPage.getContent().getFirst().getEmail()).isEqualTo("a@x.com");
     }
 
     @Test
@@ -124,15 +124,18 @@ class UserServiceImplTest {
         given(userRepository.findById(5L)).willReturn(Optional.of(existing));
         given(userRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThat(service.findById(5L).getEmail()).isEqualTo("jk@x.com");
-        assertThrows(ResourceNotFoundException.class, () -> service.findById(999L));
+        assertThat(userServiceImpl.findById(5L).getEmail()).isEqualTo("jk@x.com");
+        assertThrows(ResourceNotFoundException.class, () -> userServiceImpl.findById(999L));
     }
 
     @Test
     @DisplayName("insert: normaliza email, encripta senha, associa ROLE_CLIENT e salva")
     void insert_persistsWithNormalizationAndRole() {
-        var dto = new UserInsertDTO(
-                "  Alice  ", "  Doe  ", "  Alice@Example.COM  ", "plain"
+        var userInsertDTO = new UserInsertDTO(
+                "  Alice  ",
+                "  Doe  ",
+                "  Alice@Example.COM  ",
+                "plain"
         );
         String normalized = "alice@example.com";
 
@@ -141,18 +144,19 @@ class UserServiceImplTest {
         given(roleRepository.getReferenceById(2L)).willReturn(new Role(2L, "ROLE_CLIENT"));
         final ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         doAnswer(inv -> {
-            User e = inv.getArgument(0);
-            withId(e, 42L);
+            User user = inv.getArgument(0);
+            withId(user, 42L);
             return null;
         }).when(userRepository).saveAndFlush(captor.capture());
 
-        UserDTO out = service.insert(dto);
+        UserDTO userDTO = userServiceImpl.insert(userInsertDTO);
 
-        assertThat(out.getId()).isEqualTo(42L);
+        assertThat(userDTO.getId()).isEqualTo(42L);
         User saved = captor.getValue();
         assertThat(saved.getEmail()).isEqualTo(normalized);
         assertThat(saved.getPassword()).isEqualTo("ENC");
-        assertThat(saved.getRoles()).extracting("authority")
+        assertThat(saved.getRoles())
+                .extracting("authority")
                 .containsExactly("ROLE_CLIENT");
         verify(roleRepository).getReferenceById(2L);
         verify(passwordEncoder).encode("plain");
@@ -163,23 +167,23 @@ class UserServiceImplTest {
     @DisplayName("insert: pré-checagem de duplicidade dispara DuplicateEntryException")
     void insert_precheckDuplicate_throws() {
         given(userRepository.findByEmail("x@y.com")).willReturn(Optional.of(new User()));
-        var dto = new UserInsertDTO("A", "B", "x@y.com", "pwd");
+        var userInsertDTO = new UserInsertDTO("A", "B", "x@y.com", "pwd");
 
-        assertThrows(DuplicateEntryException.class, () -> service.insert(dto));
+        assertThrows(DuplicateEntryException.class, () -> userServiceImpl.insert(userInsertDTO));
         verify(userRepository, never()).saveAndFlush(any());
     }
 
     @Test
     @DisplayName("insert: DataIntegrityViolationException mapeada para DuplicateEntryException")
     void insert_violation_mappedToDuplicate() {
-        var dto = new UserInsertDTO("A", "B", "X@Y.com", "pwd");
+        var userInsertDTO = new UserInsertDTO("A", "B", "X@Y.com", "pwd");
         given(userRepository.findByEmail("x@y.com")).willReturn(Optional.empty());
         given(roleRepository.getReferenceById(2L)).willReturn(new Role(2L, "ROLE_CLIENT"));
         given(passwordEncoder.encode("pwd")).willReturn("ENC");
         doThrow(new DataIntegrityViolationException("uk_email"))
                 .when(userRepository).saveAndFlush(any(User.class));
 
-        assertThrows(DuplicateEntryException.class, () -> service.insert(dto));
+        assertThrows(DuplicateEntryException.class, () -> userServiceImpl.insert(userInsertDTO));
     }
 
     @Test
@@ -189,7 +193,7 @@ class UserServiceImplTest {
         given(userRepository.findById(7L)).willReturn(Optional.of(existing));
 
         assertThrows(AuthenticationCredentialsNotFoundException.class,
-                () -> service.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
     }
 
     @Test
@@ -200,7 +204,7 @@ class UserServiceImplTest {
         setPrincipal("intruder@example.com");
 
         assertThrows(AccessDeniedException.class,
-                () -> service.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("X", "Y", "z@x.com")));
     }
 
     @Test
@@ -211,7 +215,7 @@ class UserServiceImplTest {
         setPrincipal("owner@example.com");
 
         assertThrows(ValidationException.class,
-                () -> service.update(7L, new UserUpdateDTO("X", "Y", null)));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("X", "Y", null)));
     }
 
     @Test
@@ -222,7 +226,7 @@ class UserServiceImplTest {
         setPrincipal("owner@example.com");
 
         assertThrows(DuplicateEntryException.class,
-                () -> service.update(7L, new UserUpdateDTO("X", "Y", "OWNER@EXAMPLE.COM")));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("X", "Y", "OWNER@EXAMPLE.COM")));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -231,11 +235,12 @@ class UserServiceImplTest {
     void update_throwsWhenEmailTakenByOther() {
         User existing = withId(newUser("A", "B", "owner@example.com"), 7L);
         given(userRepository.findById(7L)).willReturn(Optional.of(existing));
+        given(userRepository.existsByEmailIgnoreCaseAndIdNot("new@mail.com", 7L)).willReturn(false);
         given(userRepository.existsByEmailIgnoreCaseAndIdNot("new@mail.com", 7L)).willReturn(true);
         setPrincipal("owner@example.com");
 
         assertThrows(DuplicateEntryException.class,
-                () -> service.update(7L, new UserUpdateDTO("X", "Y", "new@mail.com")));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("X", "Y", "new@mail.com")));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -248,7 +253,7 @@ class UserServiceImplTest {
         given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
         setPrincipal("owner@example.com");
 
-        UserDTO out = service.update(7L, new UserUpdateDTO("  NewFirst  ", " NewLast ", "  NEW@mail.com  "));
+        UserDTO out = userServiceImpl.update(7L, new UserUpdateDTO("  NewFirst  ", " NewLast ", "  NEW@mail.com  "));
 
         assertThat(out.getFirstName()).isEqualTo("NewFirst");
         assertThat(out.getLastName()).isEqualTo("NewLast");
@@ -266,9 +271,9 @@ class UserServiceImplTest {
         given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
         setJwtWithUsernameClaim();
 
-        UserDTO out = service.update(7L, new UserUpdateDTO("John", "Smith", "john@new.com"));
+        UserDTO userDTO = userServiceImpl.update(7L, new UserUpdateDTO("John", "Smith", "john@new.com"));
 
-        assertThat(out.getEmail()).isEqualTo("john@new.com");
+        assertThat(userDTO.getEmail()).isEqualTo("john@new.com");
         verify(userRepository).save(existing);
     }
 
@@ -280,20 +285,97 @@ class UserServiceImplTest {
         setPrincipal("owner@example.com");
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.update(7L, new UserUpdateDTO("  ", "Y", "new@mail.com")));
+                () -> userServiceImpl.update(7L, new UserUpdateDTO("  ", "Y", "new@mail.com")));
+    }
+
+    @Test
+    @DisplayName("authenticated: 401 quando não autenticado")
+    void authenticated_unauthenticated_throws() {
+        SecurityContextHolder.clearContext();
+
+        assertThrows(AuthenticationCredentialsNotFoundException.class, () -> userServiceImpl.authenticated());
+    }
+
+    @Test
+    @DisplayName("authenticated: 404 quando usuário não existe")
+    void authenticated_userNotFound_throws() {
+        setPrincipal("john@example.com");
+        given(userRepository.findByEmail("john@example.com")).willReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userServiceImpl.authenticated());
+    }
+
+    @Test
+    @DisplayName("authenticated: ok retorna entidade do repositório")
+    void authenticated_ok_returnsEntity() {
+        setPrincipal("john@example.com");
+        User user = withId(newUser("John", "Doe", "john@example.com"), 55L);
+        given(userRepository.findByEmail("john@example.com")).willReturn(Optional.of(user));
+
+        User out = userServiceImpl.authenticated();
+
+        assertThat(out).isSameAs(user);
+        assertThat(out.getEmail()).isEqualTo("john@example.com");
+    }
+
+    @Test
+    @DisplayName("getMe: 401 quando não autenticado")
+    void getMe_unauthenticated_throws() {
+        SecurityContextHolder.clearContext();
+
+        assertThrows(AuthenticationCredentialsNotFoundException.class, () -> userServiceImpl.getMe());
+    }
+
+    @Test
+    @DisplayName("getMe: 404 quando usuário não existe")
+    void getMe_userNotFound_throws() {
+        setPrincipal("alice@example.com");
+        given(userRepository.findByEmail("alice@example.com")).willReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userServiceImpl.getMe());
+    }
+
+    @Test
+    @DisplayName("getMe: ok retorna DTO com dados do usuário autenticado")
+    void getMe_ok_returnsDTO() {
+        setPrincipal("alice@example.com");
+        User user = withId(newUser("Alice", "Smith", "alice@example.com"), 77L);
+        given(userRepository.findByEmail("alice@example.com")).willReturn(Optional.of(user));
+
+        UserDTO userDTO = userServiceImpl.getMe();
+
+        assertThat(userDTO.getId()).isEqualTo(77L);
+        assertThat(userDTO.getEmail()).isEqualTo("alice@example.com");
+        assertThat(userDTO.getFirstName()).isEqualTo("Alice");
+        assertThat(userDTO.getLastName()).isEqualTo("Smith");
     }
 
     private void setPrincipal(String name) {
-        SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(name, "pwd", List.of()));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        name,
+                        "pwd",
+                        List.of()
+                ));
     }
 
     private void setJwtWithUsernameClaim() {
         Map<String, Object> headers = Map.of("alg", "none");
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", "owner@example.com");
-        Jwt jwt = new Jwt("token", Instant.now(), Instant.now().plusSeconds(3600), headers, claims);
-        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt, List.of(), "ignoredPrincipalName"));
+        Jwt jwt = new Jwt(
+                "token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                headers,
+                claims
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(
+                        jwt,
+                        List.of(),
+                        "ignoredPrincipalName")
+        );
     }
 
     private record ProjectionStub(String username, String password, Long roleId, String authority)
