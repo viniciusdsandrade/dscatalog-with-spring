@@ -1,4 +1,4 @@
-package com.restful.dscatalog.restassured;
+package com.restful.dscatalog.rest;
 
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
