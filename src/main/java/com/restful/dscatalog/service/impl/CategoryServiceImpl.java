@@ -31,15 +31,15 @@ public class CategoryServiceImpl implements CategoryService {
             Category category = new Category(categoryPostDTO);
             categoryRepository.saveAndFlush(category);
             return category;
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new DuplicateEntryException("Entrada duplicada para Categoria.");
         }
     }
 
     @Override
-    public Category findById(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+    public Category findById(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
     }
 
     @Override
@@ -50,13 +50,13 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public @Valid CategoryDetailsDTO update(Long id, CategoryPostDTO categoryPostDTO) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+    public @Valid CategoryDetailsDTO update(Long categoryId, CategoryPostDTO categoryPostDTO) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
         copyDtoToEntity(categoryPostDTO, category);
         try {
             categoryRepository.save(category);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new DuplicateEntryException("Entrada duplicada para Categoria.");
         }
         return new CategoryDetailsDTO(category);
@@ -64,20 +64,20 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public CategoryDetailsDTO delete(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+    public CategoryDetailsDTO delete(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
         try {
             categoryRepository.delete(category);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new DatabaseException("Integrity violation");
         }
         return new CategoryDetailsDTO(category);
     }
 
-    private void copyDtoToEntity(CategoryPostDTO dto, Category entity) {
-        if (dto != null && dto.name() != null) {
-            entity.setName(dto.name().trim());
+    private void copyDtoToEntity(CategoryPostDTO categoryPostDTO, Category category) {
+        if (categoryPostDTO != null && categoryPostDTO.name() != null) {
+            category.setName(categoryPostDTO.name().trim());
         }
     }
 }
