@@ -35,7 +35,7 @@ import static java.util.Locale.ROOT;
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
 
-    private static final Long ROLE_CLIENT_ID = 2L;
+    private static final Long DEFAULT_CLIENT_ROLE_ID = 2L;
 
     private final PasswordEncoder bCryptPasswordEncoder;
     private final UserRepository userRepository;
@@ -55,23 +55,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         List<UserDetailsProjection> results = userRepository.searchUserAndRolesByEmail(username);
+
         if (results.isEmpty())
             throw new UsernameNotFoundException("Email not found: " + username);
+
         User user = new User(
                 results.getFirst().getUsername(),
                 results.getFirst().getPassword()
         );
+
         results.forEach(projection -> user.addRole(
-                new Role(projection.getRoleId(), projection.getAuthority())
+                new Role(
+                        projection.getRoleId(),
+                        projection.getAuthority()
+                )
         ));
+
         return user;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<UserDTO> findAllPaged(Pageable pageable) {
-        Page<User> list = userRepository.findAll(pageable);
-        return list.map(UserDTO::new);
+        Page<User> userPage = userRepository.findAll(pageable);
+        return userPage.map(UserDTO::new);
     }
 
     @Override
@@ -84,101 +91,102 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public UserDTO insert(@Valid UserInsertDTO dto) {
-        final String normalizedEmail = normalizeEmail(dto.email());
+    public UserDTO insert(@Valid UserInsertDTO userInsertDTO) {
+        final String normalizedEmailAddress = normalizeEmailAddress(userInsertDTO.email());
 
-        if (userRepository.findByEmail(normalizedEmail).isPresent())
-            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
+        if (userRepository.findByEmail(normalizedEmailAddress).isPresent())
+            throw new DuplicateEntryException("Email already exists: " + normalizedEmailAddress);
 
         try {
-            User entity = new User();
-            entity.initializeProfile(
-                    dto.firstName(),
-                    dto.lastName(),
-                    normalizedEmail,
-                    bCryptPasswordEncoder.encode(dto.password())
+            User user = new User();
+            user.initializeProfile(
+                    userInsertDTO.firstName(),
+                    userInsertDTO.lastName(),
+                    normalizedEmailAddress,
+                    bCryptPasswordEncoder.encode(userInsertDTO.password())
             );
 
-            entity.getRoles().clear();
-            entity.getRoles().add(roleRepository.getReferenceById(ROLE_CLIENT_ID));
+            user.getRoles().clear();
+            user.getRoles().add(roleRepository.getReferenceById(DEFAULT_CLIENT_ROLE_ID));
 
-            userRepository.saveAndFlush(entity);
-            return new UserDTO(entity);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateEntryException("Email already exists: " + normalizedEmail);
+            userRepository.saveAndFlush(user);
+
+            return new UserDTO(user);
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            throw new DuplicateEntryException("Email already exists: " + normalizedEmailAddress);
         }
     }
 
     @Override
     @Transactional
     public UserDTO update(final Long id, final UserUpdateDTO userInsertDTO) {
-        final User entity = userRepository.findById(id)
+        final User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        final Authentication auth = requireAuthenticated();
-        final String requester = resolveRequesterIdentity(auth);
+        final Authentication authentication = requireAuthenticated();
+        final String requesterEmail = resolveRequesterIdentity(authentication);
 
-        assertOwner(entity, requester);
+        assertRequesterIsOwner(user, requesterEmail);
 
-        final String normalizedEmail = normalizeEmail(userInsertDTO.email());
+        final String normalizedEmailAddress = normalizeEmailAddress(userInsertDTO.email());
 
-        validateEmailChange(entity, normalizedEmail, id);
+        validateEmailUpdate(user, normalizedEmailAddress, id);
 
-        entity.updateProfile(userInsertDTO.firstName(), userInsertDTO.lastName(), normalizedEmail);
-        userRepository.save(entity);
+        user.updateProfile(userInsertDTO.firstName(), userInsertDTO.lastName(), normalizedEmailAddress);
+        userRepository.save(user);
 
-        return new UserDTO(entity);
+        return new UserDTO(user);
     }
 
     @Override
     public User authenticated() {
-        final Authentication auth = requireAuthenticated();
-        final String requester = resolveRequesterIdentity(auth);
-        return userRepository.findByEmail(requester)
+        final Authentication authentication = requireAuthenticated();
+        final String requesterEmail = resolveRequesterIdentity(authentication);
+        return userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     @Override
     public UserDTO getMe() {
-        final Authentication auth = requireAuthenticated();
-        final String requester = resolveRequesterIdentity(auth);
-        final User entity = userRepository.findByEmail(requester)
+        final Authentication authentication = requireAuthenticated();
+        final String requesterEmail = resolveRequesterIdentity(authentication);
+        final User user = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return new UserDTO(entity);
+        return new UserDTO(user);
     }
 
     private Authentication requireAuthenticated() {
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated())
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated())
             throw new AuthenticationCredentialsNotFoundException("No authentication");
-        return auth;
+        return authentication;
     }
 
-    private String resolveRequesterIdentity(Authentication auth) {
-        if (auth instanceof JwtAuthenticationToken jwt) {
+    private String resolveRequesterIdentity(Authentication authentication) {
+        if (authentication instanceof JwtAuthenticationToken jwt) {
             Object username = jwt.getTokenAttributes().get("username");
             return (username != null) ? username.toString() : jwt.getName();
         }
-        return auth.getName();
+        return authentication.getName();
     }
 
-    private void assertOwner(User entity, String requesterIdentity) {
+    private void assertRequesterIsOwner(User entity, String requesterIdentity) {
         String ownerEmail = entity.getEmail();
         boolean isOwner = ownerEmail != null
-                && ownerEmail.equalsIgnoreCase(requesterIdentity);
+                          && ownerEmail.equalsIgnoreCase(requesterIdentity);
 
         if (!isOwner) throw new AccessDeniedException("You are not allowed to update this user");
     }
 
-    private String normalizeEmail(String raw) {
-        if (raw == null) throw new ValidationException("Email must not be null");
-        return raw.trim().toLowerCase(ROOT);
+    private String normalizeEmailAddress(String rawEmail) {
+        if (rawEmail == null) throw new ValidationException("Email must not be null");
+        return rawEmail.trim().toLowerCase(ROOT);
     }
 
-    private void validateEmailChange(User entity, String newEmail, Long id) {
-        if (entity.getEmail() != null && entity.getEmail().equalsIgnoreCase(newEmail))
+    private void validateEmailUpdate(User user, String candidateEmail, Long userId) {
+        if (user.getEmail() != null && user.getEmail().equalsIgnoreCase(candidateEmail))
             throw new DuplicateEntryException("New email must be different from current");
-        if (userRepository.existsByEmailIgnoreCaseAndIdNot(newEmail, id))
-            throw new DuplicateEntryException("Email already exists: " + newEmail);
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(candidateEmail, userId))
+            throw new DuplicateEntryException("Email already exists: " + candidateEmail);
     }
 }
