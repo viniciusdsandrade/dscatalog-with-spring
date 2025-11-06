@@ -1,4 +1,4 @@
-package com.restful.dscatalog.dto.categoria;
+package com.restful.dscatalog.dto.category;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
