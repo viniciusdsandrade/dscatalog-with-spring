@@ -42,7 +42,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 })
 @TestInstance(PER_CLASS)
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-class UserControllerRestAssured {
+class UserControllerRestAssuredTest {
 
     @LocalServerPort
     private int port;
